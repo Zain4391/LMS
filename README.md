@@ -123,7 +123,16 @@ src/
 │   │       │   ├── Role.java
 │   │       │   └── Status.java
 │   │       ├── repository/       # Data repositories
-│   │       │   └── GenreRepository.java
+│   │       │   ├── AuthorRepository.java
+│   │       │   ├── BookCopyRepository.java
+│   │       │   ├── BookRepository.java
+│   │       │   ├── BorrowedRepository.java
+│   │       │   ├── FineRepository.java
+│   │       │   ├── GenreRepository.java
+│   │       │   ├── LibrarianRepository.java
+│   │       │   ├── PaymentRepository.java
+│   │       │   ├── PublisherRepository.java
+│   │       │   └── UserRepository.java
 │   │       └── LmsApplication.java
 │   └── resources/
 │       ├── application.properties
@@ -262,6 +271,162 @@ The system uses several enumerations to maintain data consistency and provide cl
 - **COMPLETED**: Payment has been successfully processed
 - **PENDING**: Payment is being processed
 - **FAILED**: Payment processing failed
+
+### User Management Enums
+
+#### Role
+- **STAFF**: Regular library staff member
+- **ADMIN**: Administrator with full access
+
+#### Status
+- **ACTIVE**: User/Librarian account is active
+- **INACTIVE**: User/Librarian account is inactive
+- **SUSPENDED**: User/Librarian account is suspended
+
+## 🗃️ Repository Layer
+
+The application includes comprehensive repository interfaces for all entities, providing both basic CRUD operations and custom query methods.
+
+### Repository Features
+
+All repositories extend `JpaRepository<Entity, Long>` and include:
+- **Standard CRUD operations** (inherited from JpaRepository)
+- **Custom query methods** using Spring Data JPA naming conventions
+- **Complex queries** using `@Query` annotations with JPQL
+- **Validation methods** for checking existence
+- **Business-specific queries** for common operations
+
+### Repository Details
+
+#### AuthorRepository
+**Purpose**: Manage author information
+- Find authors by name (exact/partial match, case-insensitive)
+- Find authors by nationality
+- Check if author exists by name
+- Search functionality for author discovery
+
+#### BookRepository
+**Purpose**: Manage book catalog
+- Find books by ISBN (unique identifier)
+- Search books by title (case-insensitive, partial match)
+- Filter books by status, language, and publisher
+- Find books by author name using JOIN queries
+- Find books by genre name using JOIN queries
+- Advanced keyword search across titles and authors
+- Count books by status for inventory management
+- Check ISBN uniqueness
+
+#### BookCopyRepository
+**Purpose**: Track individual physical book copies
+- Find book copies by unique barcode
+- List all copies of a specific book
+- Filter copies by status (AVAILABLE, BORROWED, UNAVAILABLE)
+- Find available copies for borrowing
+- Filter by location and condition
+- Count total and available copies per book
+- Verify barcode uniqueness
+
+#### BorrowedRepository
+**Purpose**: Manage borrowing transactions
+- Find all borrowing records for a user
+- Filter records by borrow status
+- Find currently active (unreturned) borrows
+- Identify overdue records based on due date
+- Find records due soon (within specified days)
+- Track borrowing history by book copy
+- Find current borrower of a specific copy
+- Search by date range for reporting
+- Count active borrows per user (for borrowing limits)
+
+#### FineRepository
+**Purpose**: Track and manage fines
+- Find fine associated with a borrowed record
+- Filter fines by status (PENDING, PAID, WAIVED)
+- Find all fines for a specific user
+- Identify pending (unpaid) fines
+- Filter by assessment date range
+- Find fines exceeding a certain amount
+- Calculate total pending fines per user
+- Calculate total fines by status
+- Count fines by status for reporting
+
+#### LibrarianRepository
+**Purpose**: Manage library staff accounts
+- Find librarian by email (for authentication)
+- Filter librarians by role (STAFF, ADMIN)
+- Filter by account status (ACTIVE, INACTIVE, SUSPENDED)
+- Search librarians by name (case-insensitive)
+- Verify email and phone number uniqueness
+- Count librarians by role and status
+
+#### PaymentRepository
+**Purpose**: Process and track payments
+- Find all payments for a specific fine
+- Find payment by transaction ID
+- Filter by payment status and method
+- Find all payments made by a user
+- Search by payment date range
+- Calculate total amount paid for a fine
+- Calculate total payments by user
+- Calculate revenue within date range
+- Track successful payments by method
+- Verify transaction ID uniqueness
+
+#### PublisherRepository
+**Purpose**: Manage publisher information
+- Find publisher by name (exact match)
+- Search publishers by name (case-insensitive, partial)
+- Filter publishers by country
+- Find publisher by email
+- Verify name and email uniqueness
+
+#### UserRepository
+**Purpose**: Manage library user accounts
+- Find user by email (for authentication)
+- Find user by phone number
+- Filter users by status
+- Search users by name (case-insensitive, partial)
+- Find users by membership date range
+- Identify users with overdue books (using complex JOIN query)
+- Find users with pending fines (using complex JOIN query)
+- Verify email and phone uniqueness
+- Count users by status
+
+#### GenreRepository
+**Purpose**: Manage book genres/categories
+- Basic CRUD operations for genre management
+- Extensible for future custom queries
+
+### Query Method Types
+
+1. **Derived Query Methods**: Spring Data automatically implements methods based on naming conventions
+   - Example: `findByName(String name)`
+   - Example: `existsByEmail(String email)`
+
+2. **Custom JPQL Queries**: Complex queries using `@Query` annotation
+   - Example: Finding overdue records
+   - Example: Searching across multiple related entities
+
+3. **Aggregation Methods**: Calculate totals and counts
+   - Example: `countByStatus(Status status)`
+   - Example: `calculateTotalPendingFinesByUserId(Long userId)`
+
+### Repository Usage Example
+
+```java
+@Service
+public class BookService {
+    @Autowired
+    private BookRepository bookRepository;
+    
+    public List<Book> searchAvailableBooks(String keyword) {
+        List<Book> books = bookRepository.searchBooks(keyword);
+        return books.stream()
+                   .filter(book -> book.getStatus() == BookStatus.AVAILABLE)
+                   .collect(Collectors.toList());
+    }
+}
+```
 
 ## 🔧 Configuration
 
