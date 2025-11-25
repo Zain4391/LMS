@@ -10,12 +10,17 @@ A Spring Boot-based Library Management System that provides comprehensive functi
 - **Publisher Management**: Manage publishing house information
 - **Librarian Management**: Staff and admin role management
 - **Book Management**: Comprehensive book catalog with ISBN, titles, descriptions, and metadata
+  - **RESTful API**: Complete CRUD operations with search and filtering
+  - **Pagination Support**: All list endpoints support pagination and sorting
+  - **Advanced Search**: Search by title, author, genre, language, and more
 - **Book Copy Management**: Track individual book copies with barcodes, conditions, and locations
 - **Borrowing System**: Complete borrowing workflow with due dates and return tracking
 - **Fine Management**: Automated fine calculation and tracking for overdue books
 - **Payment Processing**: Support for multiple payment methods and transaction tracking
 - **Security**: Password encryption using BCrypt
 - **Database Integration**: PostgreSQL database with JPA/Hibernate
+- **DTO Pattern**: Clean separation between entity and presentation layers
+- **Mapper Layer**: Automatic mapping between DTOs and entities
 
 ## 🛠️ Technology Stack
 
@@ -102,6 +107,21 @@ src/
 ├── main/
 │   ├── java/
 │   │   └── com/LibraryManagementSystem/LMS/
+│   │       ├── controller/       # REST API Controllers
+│   │       │   ├── AuthorController.java
+│   │       │   ├── BookController.java
+│   │       │   ├── GenreController.java
+│   │       │   └── PublisherController.java
+│   │       ├── dto/              # Data Transfer Objects
+│   │       │   ├── AuthorRequestDTO.java
+│   │       │   ├── AuthorResponseDTO.java
+│   │       │   ├── BookRequestDTO.java
+│   │       │   ├── BookResponseDTO.java
+│   │       │   ├── GenreRequestDTO.java
+│   │       │   ├── GenreResponseDTO.java
+│   │       │   ├── PublisherRequestDTO.java
+│   │       │   ├── PublisherResponseDTO.java
+│   │       │   └── ErrorResponse.java
 │   │       ├── entity/           # JPA entities
 │   │       │   ├── Author.java
 │   │       │   ├── Book.java
@@ -122,6 +142,14 @@ src/
 │   │       │   ├── PaymentStatus.java
 │   │       │   ├── Role.java
 │   │       │   └── Status.java
+│   │       ├── exception/        # Exception handling
+│   │       │   ├── GlobalExceptionHandler.java
+│   │       │   └── ResourceNotFoundException.java
+│   │       ├── mapper/           # DTO-Entity mappers
+│   │       │   ├── AuthorMapper.java
+│   │       │   ├── BookMapper.java
+│   │       │   ├── GenreMapper.java
+│   │       │   └── PublisherMapper.java
 │   │       ├── repository/       # Data repositories
 │   │       │   ├── AuthorRepository.java
 │   │       │   ├── BookCopyRepository.java
@@ -133,6 +161,16 @@ src/
 │   │       │   ├── PaymentRepository.java
 │   │       │   ├── PublisherRepository.java
 │   │       │   └── UserRepository.java
+│   │       ├── service/          # Business logic layer
+│   │       │   ├── interfaces/
+│   │       │   │   ├── AuthorService.java
+│   │       │   │   ├── BookService.java
+│   │       │   │   ├── GenreService.java
+│   │       │   │   └── PublisherService.java
+│   │       │   ├── AuthorServiceImpl.java
+│   │       │   ├── BookServiceImpl.java
+│   │       │   ├── GenreServiceImpl.java
+│   │       │   └── PublisherServiceImpl.java
 │   │       └── LmsApplication.java
 │   └── resources/
 │       ├── application.properties
@@ -445,9 +483,55 @@ Key configuration settings in `application.properties`:
 
 ## 🧪 Testing
 
-Run the test suite using:
+### Run All Tests
 ```bash
 mvn test
+```
+
+### Run Specific Test Class
+```bash
+mvn test -Dtest=BookServiceTest
+```
+
+### Test Coverage
+The application includes tests for:
+- Service layer business logic
+- Repository custom queries
+- Mapper conversions
+- Controller endpoints (integration tests)
+
+### Manual API Testing with cURL
+
+#### Create a Book
+```bash
+curl -X POST http://localhost:8080/api/books \
+  -H "Content-Type: application/json" \
+  -d '{
+    "isbn": "978-0-13-468599-1",
+    "title": "Clean Code",
+    "description": "A Handbook of Agile Software Craftsmanship",
+    "publicationDate": "2008-08-01",
+    "language": "English",
+    "pageCount": 464,
+    "publisherId": 1,
+    "authorIds": [1],
+    "genreIds": [1]
+  }'
+```
+
+#### Get All Books (Paginated)
+```bash
+curl -X GET "http://localhost:8080/api/books?page=0&size=10&sortBy=title&sortDirection=ASC"
+```
+
+#### Search Books by Title
+```bash
+curl -X GET "http://localhost:8080/api/books/search/title?title=clean"
+```
+
+#### Get Available Books
+```bash
+curl -X GET "http://localhost:8080/api/books/status/AVAILABLE?page=0&size=20"
 ```
 
 ## 📦 Building for Production
@@ -460,6 +544,461 @@ mvn clean package
 ### Run the JAR:
 ```bash
 java -jar target/LMS-0.0.1-SNAPSHOT.jar
+```
+
+## 🌐 REST API Documentation
+
+The Library Management System provides a comprehensive RESTful API for managing all library operations.
+
+### API Base URL
+```
+http://localhost:8080/api
+```
+
+### Book Management API
+
+#### 1. Create a New Book
+**Endpoint**: `POST /api/books`
+
+**Request Body**:
+```json
+{
+  "isbn": "978-0-13-468599-1",
+  "title": "Clean Code",
+  "description": "A Handbook of Agile Software Craftsmanship",
+  "publicationDate": "2008-08-01",
+  "language": "English",
+  "pageCount": 464,
+  "publisherId": 1,
+  "authorIds": [1, 2],
+  "genreIds": [3, 4]
+}
+```
+
+**Response**: `201 CREATED`
+```json
+{
+  "id": 1,
+  "isbn": "978-0-13-468599-1",
+  "title": "Clean Code",
+  "description": "A Handbook of Agile Software Craftsmanship",
+  "publicationDate": "2008-08-01",
+  "language": "English",
+  "pageCount": 464,
+  "status": "AVAILABLE",
+  "publisher": {
+    "id": 1,
+    "name": "Prentice Hall",
+    "address": "...",
+    "email": "...",
+    "country": "USA"
+  },
+  "authors": [
+    {
+      "id": 1,
+      "name": "Robert C. Martin",
+      "biography": "...",
+      "birthDate": "1952-12-05",
+      "nationality": "American"
+    }
+  ],
+  "genres": [
+    {
+      "id": 3,
+      "name": "Programming",
+      "description": "..."
+    }
+  ]
+}
+```
+
+#### 2. Get Book by ID
+**Endpoint**: `GET /api/books/{id}`
+
+**Response**: `200 OK`
+```json
+{
+  "id": 1,
+  "isbn": "978-0-13-468599-1",
+  "title": "Clean Code",
+  ...
+}
+```
+
+#### 3. Get All Books
+**Endpoint**: `GET /api/books`
+
+**Query Parameters** (all optional):
+- `page` - Page number (0-indexed)
+- `size` - Number of items per page
+- `sortBy` - Field to sort by (default: "id")
+- `sortDirection` - ASC or DESC (default: ASC)
+
+**Examples**:
+```bash
+# Get all books (list)
+GET /api/books
+
+# Get paginated books
+GET /api/books?page=0&size=10&sortBy=title&sortDirection=ASC
+```
+
+**Response (List)**: `200 OK`
+```json
+[
+  {
+    "id": 1,
+    "title": "Clean Code",
+    ...
+  },
+  {
+    "id": 2,
+    "title": "The Pragmatic Programmer",
+    ...
+  }
+]
+```
+
+**Response (Paginated)**: `200 OK`
+```json
+{
+  "content": [
+    {
+      "id": 1,
+      "title": "Clean Code",
+      ...
+    }
+  ],
+  "pageable": {
+    "pageNumber": 0,
+    "pageSize": 10,
+    "sort": {
+      "sorted": true,
+      "unsorted": false
+    }
+  },
+  "totalPages": 5,
+  "totalElements": 42,
+  "last": false,
+  "first": true,
+  "numberOfElements": 10
+}
+```
+
+#### 4. Update Book
+**Endpoint**: `PUT /api/books/{id}`
+
+**Request Body**: Same as Create Book
+
+**Response**: `200 OK`
+
+#### 5. Delete Book
+**Endpoint**: `DELETE /api/books/{id}`
+
+**Response**: `204 NO CONTENT`
+
+#### 6. Search/Filter Books
+
+##### Get Book by ISBN
+**Endpoint**: `GET /api/books/isbn/{isbn}`
+
+**Example**: `GET /api/books/isbn/978-0-13-468599-1`
+
+**Response**: `200 OK` - Single book object
+
+##### Search Books by Title
+**Endpoint**: `GET /api/books/search/title?title={keyword}`
+
+**Query Parameters**:
+- `title` (required) - Title keyword to search
+- `page`, `size`, `sortBy`, `sortDirection` (optional)
+
+**Example**: `GET /api/books/search/title?title=clean&page=0&size=10`
+
+**Response**: `200 OK` - List or Page of books
+
+##### Filter Books by Status
+**Endpoint**: `GET /api/books/status/{status}`
+
+**Status Values**: `AVAILABLE` or `UNAVAILABLE`
+
+**Example**: `GET /api/books/status/AVAILABLE?page=0&size=20`
+
+**Response**: `200 OK` - List or Page of books
+
+##### Filter Books by Publisher
+**Endpoint**: `GET /api/books/publisher/{publisherId}`
+
+**Example**: `GET /api/books/publisher/1?page=0&size=10`
+
+**Response**: `200 OK` - List or Page of books
+
+##### Filter Books by Language
+**Endpoint**: `GET /api/books/language/{language}`
+
+**Example**: `GET /api/books/language/English?page=0&size=10`
+
+**Response**: `200 OK` - List or Page of books
+
+##### Search Books by Author Name
+**Endpoint**: `GET /api/books/search/author?authorName={name}`
+
+**Example**: `GET /api/books/search/author?authorName=Martin&page=0&size=10`
+
+**Response**: `200 OK` - List or Page of books
+
+##### Search Books by Genre Name
+**Endpoint**: `GET /api/books/search/genre?genreName={name}`
+
+**Example**: `GET /api/books/search/genre?genreName=Programming`
+
+**Response**: `200 OK` - List or Page of books
+
+##### General Search (Title or Author)
+**Endpoint**: `GET /api/books/search?keyword={keyword}`
+
+**Example**: `GET /api/books/search?keyword=clean&page=0&size=10`
+
+**Response**: `200 OK` - List or Page of books
+
+#### 7. Utility Endpoints
+
+##### Check if ISBN Exists
+**Endpoint**: `GET /api/books/exists/isbn/{isbn}`
+
+**Example**: `GET /api/books/exists/isbn/978-0-13-468599-1`
+
+**Response**: `200 OK`
+```json
+true
+```
+
+##### Count Books by Status
+**Endpoint**: `GET /api/books/count/status/{status}`
+
+**Example**: `GET /api/books/count/status/AVAILABLE`
+
+**Response**: `200 OK`
+```json
+42
+```
+
+### Author Management API
+
+#### Create Author
+**Endpoint**: `POST /api/authors`
+
+**Request Body**:
+```json
+{
+  "name": "Robert C. Martin",
+  "biography": "Software engineer and author",
+  "birthDate": "1952-12-05",
+  "nationality": "American"
+}
+```
+
+**Response**: `201 CREATED`
+
+#### Get Author by ID
+**Endpoint**: `GET /api/authors/{id}`
+
+#### Get All Authors
+**Endpoint**: `GET /api/authors`
+
+#### Update Author
+**Endpoint**: `PUT /api/authors/{id}`
+
+#### Delete Author
+**Endpoint**: `DELETE /api/authors/{id}`
+
+### Genre Management API
+
+#### Create Genre
+**Endpoint**: `POST /api/genres`
+
+**Request Body**:
+```json
+{
+  "name": "Programming",
+  "description": "Books about software development"
+}
+```
+
+#### Get Genre by ID
+**Endpoint**: `GET /api/genres/{id}`
+
+#### Get All Genres
+**Endpoint**: `GET /api/genres`
+
+#### Update Genre
+**Endpoint**: `PUT /api/genres/{id}`
+
+#### Delete Genre
+**Endpoint**: `DELETE /api/genres/{id}`
+
+### Publisher Management API
+
+#### Create Publisher
+**Endpoint**: `POST /api/publishers`
+
+**Request Body**:
+```json
+{
+  "name": "Prentice Hall",
+  "address": "123 Main St",
+  "email": "info@prenticehall.com",
+  "country": "USA"
+}
+```
+
+#### Get Publisher by ID
+**Endpoint**: `GET /api/publishers/{id}`
+
+#### Get All Publishers
+**Endpoint**: `GET /api/publishers`
+
+#### Update Publisher
+**Endpoint**: `PUT /api/publishers/{id}`
+
+#### Delete Publisher
+**Endpoint**: `DELETE /api/publishers/{id}`
+
+### Error Responses
+
+All endpoints follow standard HTTP status codes and return consistent error responses:
+
+**404 NOT FOUND**:
+```json
+{
+  "timestamp": "2025-11-26T10:30:00",
+  "status": 404,
+  "error": "Not Found",
+  "message": "Book not found with id: 999",
+  "path": "/api/books/999"
+}
+```
+
+**400 BAD REQUEST** (Validation Error):
+```json
+{
+  "timestamp": "2025-11-26T10:30:00",
+  "status": 400,
+  "error": "Bad Request",
+  "message": "Validation failed",
+  "errors": {
+    "isbn": "ISBN is mandatory",
+    "title": "Title is mandatory"
+  },
+  "path": "/api/books"
+}
+```
+
+**409 CONFLICT** (Business Rule Violation):
+```json
+{
+  "timestamp": "2025-11-26T10:30:00",
+  "status": 409,
+  "error": "Conflict",
+  "message": "Book with ISBN 978-0-13-468599-1 already exists",
+  "path": "/api/books"
+}
+```
+
+## 📐 Architecture & Design Patterns
+
+### Layered Architecture
+
+The application follows a clean layered architecture:
+
+1. **Controller Layer** (`@RestController`)
+   - Handles HTTP requests and responses
+   - Input validation using `@Valid`
+   - Maps between DTOs and service calls
+   - Pagination and sorting support
+
+2. **Service Layer** (`@Service`)
+   - Contains business logic
+   - Transaction management using `@Transactional`
+   - Coordinates between repositories and mappers
+   - Validates business rules (e.g., ISBN uniqueness)
+
+3. **Repository Layer** (`@Repository`)
+   - Data access using Spring Data JPA
+   - Custom queries with JPQL
+   - Derived query methods
+
+4. **Entity Layer** (`@Entity`)
+   - JPA entities representing database tables
+   - Relationships and constraints
+
+### DTO Pattern
+
+The application uses Data Transfer Objects (DTOs) to separate the API layer from the persistence layer:
+
+#### Request DTOs
+- Used for creating and updating resources
+- Include validation annotations
+- Example: `BookRequestDTO`, `AuthorRequestDTO`
+
+#### Response DTOs
+- Used for returning data to clients
+- Include nested objects for related entities
+- Example: `BookResponseDTO` includes nested `PublisherResponseDTO`, `AuthorResponseDTO`, `GenreResponseDTO`
+
+### Mapper Pattern
+
+Mappers handle conversion between DTOs and entities:
+
+```java
+@Component
+public class BookMapper {
+    // Converts Book entity to BookResponseDTO
+    public BookResponseDTO toResponseDTO(Book book);
+    
+    // Converts BookRequestDTO to Book entity
+    public Book toEntity(BookRequestDTO requestDTO);
+    
+    // Updates existing Book entity from BookRequestDTO
+    public void updateEntityFromRequest(Book book, BookRequestDTO requestDTO);
+}
+```
+
+### Service Layer Features
+
+#### Transaction Management
+```java
+@Service
+@Transactional
+public class BookServiceImpl implements BookService {
+    // Write operations run in transactions
+    public Book create(Book book) { ... }
+    
+    // Read operations use read-only transactions
+    @Transactional(readOnly = true)
+    public Book getById(Long id) { ... }
+}
+```
+
+#### Business Logic Validation
+- ISBN uniqueness validation
+- Book status management
+- Fine calculation
+- Overdue detection
+
+### Exception Handling
+
+Global exception handler (`@ControllerAdvice`) provides consistent error responses:
+
+```java
+@ControllerAdvice
+public class GlobalExceptionHandler {
+    @ExceptionHandler(ResourceNotFoundException.class)
+    public ResponseEntity<ErrorResponse> handleResourceNotFound(...);
+    
+    @ExceptionHandler(MethodArgumentNotValidException.class)
+    public ResponseEntity<ErrorResponse> handleValidationErrors(...);
+}
 ```
 
 ## 🔒 Security Features
