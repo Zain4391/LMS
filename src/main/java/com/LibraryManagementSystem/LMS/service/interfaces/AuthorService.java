@@ -1,4 +1,4 @@
-package com.LibraryManagementSystem.LMS.service;
+package com.LibraryManagementSystem.LMS.service.interfaces;
 
 import com.LibraryManagementSystem.LMS.entity.Author;
 import java.util.List;

@@ -3,6 +3,8 @@ package com.LibraryManagementSystem.LMS.service;
 import com.LibraryManagementSystem.LMS.entity.Publisher;
 import com.LibraryManagementSystem.LMS.exception.ResourceNotFoundException;
 import com.LibraryManagementSystem.LMS.repository.PublisherRepository;
+import com.LibraryManagementSystem.LMS.service.interfaces.PublisherService;
+
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
