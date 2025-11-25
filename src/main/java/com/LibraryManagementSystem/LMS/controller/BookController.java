@@ -13,7 +13,7 @@ import com.LibraryManagementSystem.LMS.dto.BookResponseDTO;
 import com.LibraryManagementSystem.LMS.entity.Book;
 import com.LibraryManagementSystem.LMS.enums.BookStatus;
 import com.LibraryManagementSystem.LMS.mapper.BookMapper;
-import com.LibraryManagementSystem.LMS.service.BookService;
+import com.LibraryManagementSystem.LMS.service.interfaces.BookService;
 
 import jakarta.validation.Valid;
 

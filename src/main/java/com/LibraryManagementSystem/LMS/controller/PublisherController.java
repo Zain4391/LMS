@@ -4,7 +4,8 @@ import com.LibraryManagementSystem.LMS.dto.PublisherRequestDTO;
 import com.LibraryManagementSystem.LMS.dto.PublisherResponseDTO;
 import com.LibraryManagementSystem.LMS.entity.Publisher;
 import com.LibraryManagementSystem.LMS.mapper.PublisherMapper;
-import com.LibraryManagementSystem.LMS.service.PublisherService;
+import com.LibraryManagementSystem.LMS.service.interfaces.PublisherService;
+
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;

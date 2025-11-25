@@ -4,7 +4,8 @@ import com.LibraryManagementSystem.LMS.dto.GenreRequestDTO;
 import com.LibraryManagementSystem.LMS.dto.GenreResponseDTO;
 import com.LibraryManagementSystem.LMS.entity.Genre;
 import com.LibraryManagementSystem.LMS.mapper.GenreMapper;
-import com.LibraryManagementSystem.LMS.service.GenreService;
+import com.LibraryManagementSystem.LMS.service.interfaces.GenreService;
+
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;

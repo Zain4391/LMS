@@ -5,6 +5,8 @@ import com.LibraryManagementSystem.LMS.entity.Publisher;
 import com.LibraryManagementSystem.LMS.enums.BookStatus;
 import com.LibraryManagementSystem.LMS.repository.BookRepository;
 import com.LibraryManagementSystem.LMS.repository.PublisherRepository;
+import com.LibraryManagementSystem.LMS.service.interfaces.BookService;
+
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.transaction.annotation.Transactional;

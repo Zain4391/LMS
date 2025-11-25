@@ -4,7 +4,8 @@ import com.LibraryManagementSystem.LMS.dto.AuthorRequestDTO;
 import com.LibraryManagementSystem.LMS.dto.AuthorResponseDTO;
 import com.LibraryManagementSystem.LMS.entity.Author;
 import com.LibraryManagementSystem.LMS.mapper.AuthorMapper;
-import com.LibraryManagementSystem.LMS.service.AuthorService;
+import com.LibraryManagementSystem.LMS.service.interfaces.AuthorService;
+
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
