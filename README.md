@@ -2,7 +2,49 @@
 
 A Spring Boot-based Library Management System that provides comprehensive functionality for managing library operations including users, authors, genres, publishers, and librarians.
 
-## 🚀 Features
+## � Table of Contents
+
+- [Features](#-features)
+- [Technology Stack](#️-technology-stack)
+- [Prerequisites](#-prerequisites)
+- [Database Setup](#️-database-setup)
+- [Getting Started](#-getting-started)
+- [Project Structure](#-project-structure)
+- [Entity Models](#️-entity-models)
+  - [Core Entities](#core-entities)
+  - [Book Management Entities](#book-management-entities)
+  - [Borrowing System Entities](#borrowing-system-entities)
+  - [Financial Management Entities](#financial-management-entities)
+- [Enumerations](#-enumerations)
+  - [Book Management Enums](#book-management-enums)
+  - [Borrowing System Enums](#borrowing-system-enums)
+  - [Financial Management Enums](#financial-management-enums)
+  - [User Management Enums](#user-management-enums)
+- [Repository Layer](#️-repository-layer)
+  - [Repository Features](#repository-features)
+  - [Repository Details](#repository-details)
+  - [Query Method Types](#query-method-types)
+- [Configuration](#-configuration)
+- [Testing](#-testing)
+- [Building for Production](#-building-for-production)
+- [REST API Documentation](#-rest-api-documentation)
+  - [Book Management API](#book-management-api)
+  - [Book Copy Management API](#book-copy-management-api)
+  - [Borrowed (Borrowing System) API](#borrowed-borrowing-system-api)
+  - [Error Responses](#error-responses)
+- [Architecture & Design Patterns](#-architecture--design-patterns)
+  - [Layered Architecture](#layered-architecture)
+  - [DTO Pattern](#dto-pattern)
+  - [Mapper Pattern](#mapper-pattern)
+  - [Service Layer Features](#service-layer-features)
+  - [Exception Handling](#exception-handling)
+- [Security Features](#-security-features)
+- [Troubleshooting](#-troubleshooting)
+- [Development Notes](#-development-notes)
+- [Contributing](#-contributing)
+- [Support](#-support)
+
+## �🚀 Features
 
 - **User Management**: Complete user registration and management system
 - **Author Management**: Track author information including biography and nationality
@@ -1512,4 +1554,10 @@ public class GlobalExceptionHandler {
 
 ## 📞 Support
 
-For support and questions, please contact the development team or create an issue in the repository.
+For support and questions, please contact:
+- **Email**: manutdfast91@gmail.com
+- **Repository**: Create an issue in the GitHub repository
+
+---
+
+**Library Management System** - Built with ❤️ using Spring Boot
