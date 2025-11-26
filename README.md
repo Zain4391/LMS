@@ -111,6 +111,7 @@ src/
 │   │       │   ├── AuthorController.java
 │   │       │   ├── BookController.java
 │   │       │   ├── BookCopyController.java
+│   │       │   ├── BorrowedController.java
 │   │       │   ├── GenreController.java
 │   │       │   └── PublisherController.java
 │   │       ├── dto/              # Data Transfer Objects
@@ -120,10 +121,13 @@ src/
 │   │       │   ├── BookResponseDTO.java
 │   │       │   ├── BookCopyRequestDTO.java
 │   │       │   ├── BookCopyResponseDTO.java
+│   │       │   ├── BorrowedRequestDTO.java
+│   │       │   ├── BorrowedResponseDTO.java
 │   │       │   ├── GenreRequestDTO.java
 │   │       │   ├── GenreResponseDTO.java
 │   │       │   ├── PublisherRequestDTO.java
 │   │       │   ├── PublisherResponseDTO.java
+│   │       │   ├── UserSummaryDTO.java
 │   │       │   └── ErrorResponse.java
 │   │       ├── entity/           # JPA entities
 │   │       │   ├── Author.java
@@ -152,6 +156,7 @@ src/
 │   │       │   ├── AuthorMapper.java
 │   │       │   ├── BookMapper.java
 │   │       │   ├── BookCopyMapper.java
+│   │       │   ├── BorrowedMapper.java
 │   │       │   ├── GenreMapper.java
 │   │       │   └── PublisherMapper.java
 │   │       ├── repository/       # Data repositories
@@ -170,11 +175,13 @@ src/
 │   │       │   │   ├── AuthorService.java
 │   │       │   │   ├── BookService.java
 │   │       │   │   ├── BookCopyService.java
+│   │       │   │   ├── BorrowedService.java
 │   │       │   │   ├── GenreService.java
 │   │       │   │   └── PublisherService.java
 │   │       │   ├── AuthorServiceImpl.java
 │   │       │   ├── BookServiceImpl.java
 │   │       │   ├── BookCopyImpl.java
+│   │       │   ├── BorrowedImpl.java
 │   │       │   ├── GenreServiceImpl.java
 │   │       │   └── PublisherServiceImpl.java
 │   │       └── LmsApplication.java
@@ -1037,6 +1044,293 @@ true
 ```json
 3
 ```
+
+---
+
+### Borrowed (Borrowing System) API
+
+The Borrowed API manages the complete borrowing workflow including checkout, returns, overdue tracking, and borrowing limits.
+
+#### Core CRUD Operations
+
+##### 1. Create a Borrow Record (Checkout a Book)
+**Endpoint**: `POST /api/borrowed`
+
+**Request Body**:
+```json
+{
+  "borrowDate": "2025-11-26",
+  "dueDate": "2025-12-10",
+  "userId": 1,
+  "bookCopyId": 5
+}
+```
+
+**Notes**:
+- `dueDate` is optional. If not provided, it will be automatically calculated as borrowDate + 14 days
+- The book copy status is automatically updated to `BORROWED`
+- Validates that the book copy is available before borrowing
+
+**Response**: `201 CREATED`
+```json
+{
+  "id": 1,
+  "borrowDate": "2025-11-26",
+  "dueDate": "2025-12-10",
+  "returnDate": null,
+  "status": "BORROWED",
+  "user": {
+    "id": 1,
+    "name": "John Doe",
+    "email": "john.doe@example.com"
+  },
+  "bookCopy": {
+    "id": 5,
+    "barcode": "BC123456",
+    "condition": "GOOD",
+    "status": "BORROWED",
+    "location": "Shelf A-12",
+    "book": {
+      "id": 1,
+      "isbn": "978-0-13-468599-1",
+      "title": "Clean Code"
+    }
+  }
+}
+```
+
+##### 2. Get Borrow Record by ID
+**Endpoint**: `GET /api/borrowed/{id}`
+
+**Example**: `GET /api/borrowed/1`
+
+**Response**: `200 OK` - Returns BorrowedResponseDTO
+
+##### 3. Get All Borrow Records
+**Endpoint**: `GET /api/borrowed`
+
+**Query Parameters**:
+- `page` (optional): Page number (0-indexed)
+- `size` (optional): Number of items per page
+- `sortBy` (default: `borrowDate`): Field to sort by
+- `sortDirection` (default: `DESC`): `ASC` or `DESC`
+
+**Example**: `GET /api/borrowed?page=0&size=20&sortBy=borrowDate&sortDirection=DESC`
+
+**Response**: `200 OK` - List or Page of BorrowedResponseDTOs
+
+##### 4. Update Borrow Record
+**Endpoint**: `PUT /api/borrowed/{id}`
+
+**Request Body**: Same as create
+
+**Response**: `200 OK` - Returns updated BorrowedResponseDTO
+
+##### 5. Delete Borrow Record
+**Endpoint**: `DELETE /api/borrowed/{id}`
+
+**Response**: `204 NO CONTENT`
+
+#### Return Operations
+
+##### Return a Book
+**Endpoint**: `POST /api/borrowed/{id}/return`
+
+**Query Parameters**:
+- `returnDate` (optional): The return date (defaults to today if not provided)
+
+**Example**: `POST /api/borrowed/1/return?returnDate=2025-12-05`
+
+**Response**: `200 OK`
+```json
+{
+  "id": 1,
+  "borrowDate": "2025-11-26",
+  "dueDate": "2025-12-10",
+  "returnDate": "2025-12-05",
+  "status": "RETURNED",
+  "user": { ... },
+  "bookCopy": {
+    "status": "AVAILABLE",
+    ...
+  }
+}
+```
+
+**Notes**:
+- Updates borrow status to `RETURNED`
+- Automatically updates book copy status back to `AVAILABLE`
+- Validates that the book hasn't already been returned
+
+#### Filter and Search Endpoints
+
+##### Get Borrows by User
+**Endpoint**: `GET /api/borrowed/user/{userId}`
+
+**Example**: `GET /api/borrowed/user/1?page=0&size=10`
+
+**Response**: `200 OK` - List or Page of user's borrow records
+
+##### Get Borrows by Book Copy
+**Endpoint**: `GET /api/borrowed/book-copy/{bookCopyId}`
+
+**Example**: `GET /api/borrowed/book-copy/5`
+
+**Response**: `200 OK` - List or Page of borrow history for a specific book copy
+
+##### Get Borrows by Status
+**Endpoint**: `GET /api/borrowed/status/{status}`
+
+**Status Values**: `BORROWED`, `RETURNED`, `OVERDUE`
+
+**Example**: `GET /api/borrowed/status/BORROWED?page=0&size=20`
+
+**Response**: `200 OK` - List or Page of filtered records
+
+##### Get Borrows by User and Status
+**Endpoint**: `GET /api/borrowed/user/{userId}/status/{status}`
+
+**Example**: `GET /api/borrowed/user/1/status/BORROWED`
+
+**Response**: `200 OK` - List or Page of filtered records
+
+##### Get Active Borrows by User
+**Endpoint**: `GET /api/borrowed/user/{userId}/active`
+
+**Example**: `GET /api/borrowed/user/1/active`
+
+**Response**: `200 OK` - Returns currently borrowed items (not yet returned)
+
+#### Overdue Management
+
+##### Get All Overdue Borrows
+**Endpoint**: `GET /api/borrowed/overdue`
+
+**Example**: `GET /api/borrowed/overdue?page=0&size=50&sortBy=dueDate&sortDirection=ASC`
+
+**Response**: `200 OK` - List or Page of overdue borrow records
+
+##### Get Overdue Borrows by User
+**Endpoint**: `GET /api/borrowed/user/{userId}/overdue`
+
+**Example**: `GET /api/borrowed/user/1/overdue`
+
+**Response**: `200 OK` - List or Page of user's overdue items
+
+##### Mark Overdue Records (Batch Operation)
+**Endpoint**: `POST /api/borrowed/mark-overdue`
+
+**Response**: `200 OK`
+```json
+{
+  "message": "Overdue records have been updated"
+}
+```
+
+**Notes**:
+- This endpoint should be called periodically (e.g., daily via cron job)
+- Updates all records where dueDate < currentDate and status = BORROWED to status = OVERDUE
+
+#### Date Range Searches
+
+##### Search by Borrow Date Range
+**Endpoint**: `GET /api/borrowed/search/borrow-date`
+
+**Query Parameters**:
+- `startDate` (required): Start date (format: `yyyy-MM-dd`)
+- `endDate` (required): End date (format: `yyyy-MM-dd`)
+- `page`, `size`, `sortBy`, `sortDirection` (optional)
+
+**Example**: `GET /api/borrowed/search/borrow-date?startDate=2025-11-01&endDate=2025-11-30`
+
+**Response**: `200 OK` - List or Page of records within date range
+
+##### Search by Due Date Range
+**Endpoint**: `GET /api/borrowed/search/due-date`
+
+**Query Parameters**: Same as borrow date search
+
+**Example**: `GET /api/borrowed/search/due-date?startDate=2025-12-01&endDate=2025-12-15`
+
+**Response**: `200 OK` - List or Page of records with due dates in range
+
+**Use Case**: Find books due soon for reminder notifications
+
+##### Search by Return Date Range
+**Endpoint**: `GET /api/borrowed/search/return-date`
+
+**Query Parameters**: Same as borrow date search
+
+**Example**: `GET /api/borrowed/search/return-date?startDate=2025-11-01&endDate=2025-11-30`
+
+**Response**: `200 OK` - List or Page of returned records within date range
+
+**Use Case**: Monthly return statistics and reports
+
+#### Utility Endpoints
+
+##### Check if Book Copy is Available
+**Endpoint**: `GET /api/borrowed/book-copy/{bookCopyId}/available`
+
+**Example**: `GET /api/borrowed/book-copy/5/available`
+
+**Response**: `200 OK`
+```json
+{
+  "available": true
+}
+```
+
+##### Check if User Exceeded Borrow Limit
+**Endpoint**: `GET /api/borrowed/user/{userId}/limit-check`
+
+**Query Parameters**:
+- `limit` (default: 5): Maximum allowed active borrows
+
+**Example**: `GET /api/borrowed/user/1/limit-check?limit=3`
+
+**Response**: `200 OK`
+```json
+{
+  "limitExceeded": false
+}
+```
+
+**Use Case**: Validate before allowing new borrows
+
+##### Count Active Borrows by User
+**Endpoint**: `GET /api/borrowed/user/{userId}/active-count`
+
+**Example**: `GET /api/borrowed/user/1/active-count`
+
+**Response**: `200 OK`
+```json
+{
+  "activeCount": 2
+}
+```
+
+#### Common Use Cases
+
+##### Complete Checkout Workflow
+1. Check if book copy is available: `GET /api/borrowed/book-copy/{bookCopyId}/available`
+2. Check user's borrow limit: `GET /api/borrowed/user/{userId}/limit-check?limit=5`
+3. Create borrow record: `POST /api/borrowed`
+
+##### Generate Overdue Report
+1. Get all overdue records: `GET /api/borrowed/overdue?page=0&size=100`
+2. Or filter by user: `GET /api/borrowed/user/{userId}/overdue`
+
+##### Monthly Statistics
+1. Borrows in month: `GET /api/borrowed/search/borrow-date?startDate=2025-11-01&endDate=2025-11-30`
+2. Returns in month: `GET /api/borrowed/search/return-date?startDate=2025-11-01&endDate=2025-11-30`
+
+##### User Dashboard
+1. Active borrows: `GET /api/borrowed/user/{userId}/active`
+2. Overdue items: `GET /api/borrowed/user/{userId}/overdue`
+3. Borrow history: `GET /api/borrowed/user/{userId}?page=0&size=10`
+
+---
 
 ### Error Responses
 
