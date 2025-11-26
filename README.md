@@ -110,6 +110,7 @@ src/
 │   │       ├── controller/       # REST API Controllers
 │   │       │   ├── AuthorController.java
 │   │       │   ├── BookController.java
+│   │       │   ├── BookCopyController.java
 │   │       │   ├── GenreController.java
 │   │       │   └── PublisherController.java
 │   │       ├── dto/              # Data Transfer Objects
@@ -117,6 +118,8 @@ src/
 │   │       │   ├── AuthorResponseDTO.java
 │   │       │   ├── BookRequestDTO.java
 │   │       │   ├── BookResponseDTO.java
+│   │       │   ├── BookCopyRequestDTO.java
+│   │       │   ├── BookCopyResponseDTO.java
 │   │       │   ├── GenreRequestDTO.java
 │   │       │   ├── GenreResponseDTO.java
 │   │       │   ├── PublisherRequestDTO.java
@@ -148,6 +151,7 @@ src/
 │   │       ├── mapper/           # DTO-Entity mappers
 │   │       │   ├── AuthorMapper.java
 │   │       │   ├── BookMapper.java
+│   │       │   ├── BookCopyMapper.java
 │   │       │   ├── GenreMapper.java
 │   │       │   └── PublisherMapper.java
 │   │       ├── repository/       # Data repositories
@@ -165,10 +169,12 @@ src/
 │   │       │   ├── interfaces/
 │   │       │   │   ├── AuthorService.java
 │   │       │   │   ├── BookService.java
+│   │       │   │   ├── BookCopyService.java
 │   │       │   │   ├── GenreService.java
 │   │       │   │   └── PublisherService.java
 │   │       │   ├── AuthorServiceImpl.java
 │   │       │   ├── BookServiceImpl.java
+│   │       │   ├── BookCopyImpl.java
 │   │       │   ├── GenreServiceImpl.java
 │   │       │   └── PublisherServiceImpl.java
 │   │       └── LmsApplication.java
@@ -863,6 +869,174 @@ true
 
 #### Delete Publisher
 **Endpoint**: `DELETE /api/publishers/{id}`
+
+### BookCopy Management API
+
+The BookCopy API manages individual physical copies of books in the library.
+
+#### Create BookCopy
+**Endpoint**: `POST /api/book-copies`
+
+**Request Body**:
+```json
+{
+  "barcode": "BC123456",
+  "condition": "NEW",
+  "acquisitionDate": "2025-11-26",
+  "location": "Shelf A-12",
+  "bookId": 1
+}
+```
+
+**Response**: `201 CREATED`
+```json
+{
+  "id": 1,
+  "barcode": "BC123456",
+  "condition": "NEW",
+  "status": "AVAILABLE",
+  "acquisitionDate": "2025-11-26",
+  "location": "Shelf A-12",
+  "book": {
+    "id": 1,
+    "isbn": "978-0-13-468599-1",
+    "title": "Clean Code",
+    ...
+  }
+}
+```
+
+#### Get BookCopy by ID
+**Endpoint**: `GET /api/book-copies/{id}`
+
+**Response**: `200 OK`
+
+#### Get All BookCopies
+**Endpoint**: `GET /api/book-copies`
+
+**Query Parameters** (all optional):
+- `page` - Page number (0-indexed)
+- `size` - Items per page
+- `sortBy` - Sort field (default: "id")
+- `sortDirection` - ASC or DESC (default: ASC)
+
+**Example**: `GET /api/book-copies?page=0&size=10&sortBy=barcode&sortDirection=ASC`
+
+#### Update BookCopy
+**Endpoint**: `PUT /api/book-copies/{id}`
+
+**Request Body**: Same as Create BookCopy
+
+#### Delete BookCopy
+**Endpoint**: `DELETE /api/book-copies/{id}`
+
+**Response**: `204 NO CONTENT`
+
+#### Search/Filter BookCopy Endpoints
+
+##### Get BookCopy by Barcode
+**Endpoint**: `GET /api/book-copies/barcode/{barcode}`
+
+**Example**: `GET /api/book-copies/barcode/BC123456`
+
+**Response**: `200 OK` - Single BookCopy object
+
+##### Get All Copies of a Book
+**Endpoint**: `GET /api/book-copies/book/{bookId}`
+
+**Query Parameters**: `page`, `size`, `sortBy`, `sortDirection` (optional)
+
+**Example**: `GET /api/book-copies/book/1?page=0&size=10`
+
+**Response**: `200 OK` - List or Page of BookCopies
+
+##### Filter BookCopies by Status
+**Endpoint**: `GET /api/book-copies/status/{status}`
+
+**Status Values**: `AVAILABLE`, `BORROWED`, `UNAVAILABLE`
+
+**Example**: `GET /api/book-copies/status/AVAILABLE?page=0&size=20`
+
+**Response**: `200 OK` - List or Page of BookCopies
+
+##### Get Copies of Book with Specific Status
+**Endpoint**: `GET /api/book-copies/book/{bookId}/status/{status}`
+
+**Example**: `GET /api/book-copies/book/1/status/AVAILABLE`
+
+**Response**: `200 OK` - List or Page of BookCopies
+
+##### Get Available Copies of a Book
+**Endpoint**: `GET /api/book-copies/book/{bookId}/available`
+
+**Example**: `GET /api/book-copies/book/1/available?page=0&size=10`
+
+**Response**: `200 OK` - List or Page of available copies only
+
+##### Filter BookCopies by Location
+**Endpoint**: `GET /api/book-copies/location/{location}`
+
+**Example**: `GET /api/book-copies/location/Shelf%20A-12`
+
+**Response**: `200 OK` - List or Page of BookCopies
+
+##### Filter BookCopies by Condition
+**Endpoint**: `GET /api/book-copies/condition/{condition}`
+
+**Condition Values**: `NEW`, `GOOD`, `FAIR`, `POOR`
+
+**Example**: `GET /api/book-copies/condition/NEW`
+
+**Response**: `200 OK` - List or Page of BookCopies
+
+##### Filter by Location and Status
+**Endpoint**: `GET /api/book-copies/location/{location}/status/{status}`
+
+**Example**: `GET /api/book-copies/location/Shelf%20A-12/status/AVAILABLE`
+
+**Response**: `200 OK` - List or Page of BookCopies
+
+#### Utility Endpoints
+
+##### Check if Barcode Exists
+**Endpoint**: `GET /api/book-copies/exists/barcode/{barcode}`
+
+**Example**: `GET /api/book-copies/exists/barcode/BC123456`
+
+**Response**: `200 OK`
+```json
+true
+```
+
+##### Count Total Copies of a Book
+**Endpoint**: `GET /api/book-copies/count/book/{bookId}`
+
+**Example**: `GET /api/book-copies/count/book/1`
+
+**Response**: `200 OK`
+```json
+5
+```
+
+##### Count BookCopies by Status
+**Endpoint**: `GET /api/book-copies/count/status/{status}`
+
+**Example**: `GET /api/book-copies/count/status/AVAILABLE`
+
+**Response**: `200 OK`
+```json
+42
+```
+
+##### Count Available Copies of a Book
+**Endpoint**: `GET /api/book-copies/count/book/{bookId}/available`
+
+**Example**: `GET /api/book-copies/count/book/1/available`
+
+**Response**: `200 OK`
+```json
+3
+```
 
 ### Error Responses
 
