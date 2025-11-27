@@ -32,6 +32,7 @@ A Spring Boot-based Library Management System that provides comprehensive functi
   - [Book Copy Management API](#book-copy-management-api)
   - [Borrowed (Borrowing System) API](#borrowed-borrowing-system-api)
   - [Fine Management API](#fine-management-api)
+  - [Payment Management API](#payment-management-api)
   - [Error Responses](#error-responses)
 - [Architecture & Design Patterns](#-architecture--design-patterns)
   - [Layered Architecture](#layered-architecture)
@@ -157,6 +158,7 @@ src/
 │   │       │   ├── BorrowedController.java
 │   │       │   ├── FineController.java
 │   │       │   ├── GenreController.java
+│   │       │   ├── PaymentController.java
 │   │       │   └── PublisherController.java
 │   │       ├── dto/              # Data Transfer Objects
 │   │       │   ├── AuthorRequestDTO.java
@@ -171,6 +173,8 @@ src/
 │   │       │   ├── FineResponseDTO.java
 │   │       │   ├── GenreRequestDTO.java
 │   │       │   ├── GenreResponseDTO.java
+│   │       │   ├── PaymentRequestDTO.java
+│   │       │   ├── PaymentResponseDTO.java
 │   │       │   ├── PublisherRequestDTO.java
 │   │       │   ├── PublisherResponseDTO.java
 │   │       │   ├── UserSummaryDTO.java
@@ -205,6 +209,7 @@ src/
 │   │       │   ├── BorrowedMapper.java
 │   │       │   ├── FineMapper.java
 │   │       │   ├── GenreMapper.java
+│   │       │   ├── PaymentMapper.java
 │   │       │   └── PublisherMapper.java
 │   │       ├── repository/       # Data repositories
 │   │       │   ├── AuthorRepository.java
@@ -225,6 +230,7 @@ src/
 │   │       │   │   ├── BorrowedService.java
 │   │       │   │   ├── FineService.java
 │   │       │   │   ├── GenreService.java
+│   │       │   │   ├── PaymentService.java
 │   │       │   │   └── PublisherService.java
 │   │       │   ├── AuthorServiceImpl.java
 │   │       │   ├── BookServiceImpl.java
@@ -232,6 +238,7 @@ src/
 │   │       │   ├── BorrowedImpl.java
 │   │       │   ├── FineServiceImpl.java
 │   │       │   ├── GenreServiceImpl.java
+│   │       │   ├── PaymentServiceImpl.java
 │   │       │   └── PublisherServiceImpl.java
 │   │       └── LmsApplication.java
 │   └── resources/
@@ -1702,6 +1709,360 @@ The Fine Management API handles all aspects of fines including automated assessm
 1. Check user eligibility: `GET /api/fines/user/{userId}/has-pending`
 2. If has pending fines, get total: `GET /api/fines/user/{userId}/total-pending`
 3. Block borrowing until fines are paid or under threshold
+
+---
+
+### Payment Management API
+
+The Payment Management API handles payment processing for fines with support for multiple payment methods, transaction tracking, and comprehensive payment history.
+
+#### Core CRUD Operations
+
+##### 1. Create a Payment
+**Endpoint**: `POST /api/payments`
+
+**Request Body**:
+```json
+{
+  "amount": 5.00,
+  "paymentMethod": "CARD",
+  "transactionId": "TXN-123456789",
+  "fineId": 1
+}
+```
+
+**Notes**:
+- `transactionId` is optional for external payment systems
+- Payment date is automatically set to current date
+- Payment status defaults to `PENDING`
+
+**Response**: `201 CREATED`
+```json
+{
+  "id": 1,
+  "amount": 5.00,
+  "paymentDate": "2025-11-27",
+  "paymentMethod": "CARD",
+  "transactionId": "TXN-123456789",
+  "status": "PENDING",
+  "fine": {
+    "id": 1,
+    "amount": 5.00,
+    "assessedDate": "2025-11-27",
+    "status": "PENDING",
+    "reason": "Book returned 5 days late",
+    "borrowed": { ... }
+  }
+}
+```
+
+##### 2. Get Payment by ID
+**Endpoint**: `GET /api/payments/{id}`
+
+**Example**: `GET /api/payments/1`
+
+**Response**: `200 OK` - Returns PaymentResponseDTO
+
+##### 3. Get All Payments
+**Endpoint**: `GET /api/payments`
+
+**Query Parameters**:
+- `page` (optional): Page number (0-indexed)
+- `size` (optional): Number of items per page
+- `sortBy` (default: `paymentDate`): Field to sort by
+- `sortDirection` (default: `DESC`): `ASC` or `DESC`
+
+**Example**: `GET /api/payments?page=0&size=20&sortBy=amount&sortDirection=DESC`
+
+**Response**: `200 OK` - List or Page of PaymentResponseDTOs
+
+##### 4. Update Payment
+**Endpoint**: `PUT /api/payments/{id}`
+
+**Request Body**: Same as create
+
+**Response**: `200 OK` - Returns updated PaymentResponseDTO
+
+##### 5. Delete Payment
+**Endpoint**: `DELETE /api/payments/{id}`
+
+**Response**: `204 NO CONTENT`
+
+#### Search and Filter Endpoints
+
+##### Get Payment by Transaction ID
+**Endpoint**: `GET /api/payments/transaction/{transactionId}`
+
+**Example**: `GET /api/payments/transaction/TXN-123456789`
+
+**Response**: `200 OK` - Returns unique payment by transaction ID
+
+##### Get Payments by Fine ID
+**Endpoint**: `GET /api/payments/fine/{fineId}`
+
+**Example**: `GET /api/payments/fine/1?page=0&size=10`
+
+**Response**: `200 OK` - List or Page of all payments for the fine
+
+**Use Case**: Track payment history for a specific fine (supports partial payments)
+
+##### Get Payments by Status
+**Endpoint**: `GET /api/payments/status/{status}`
+
+**Status Values**: `COMPLETED`, `PENDING`, `FAILED`
+
+**Example**: `GET /api/payments/status/COMPLETED?page=0&size=50`
+
+**Response**: `200 OK` - List or Page of payments with specified status
+
+##### Get Payments by Payment Method
+**Endpoint**: `GET /api/payments/method/{method}`
+
+**Method Values**: `CARD`, `CASH`, `ONLINE`
+
+**Example**: `GET /api/payments/method/CARD?page=0&size=20`
+
+**Response**: `200 OK` - List or Page of payments using specified method
+
+**Use Case**: Analyze payment method preferences and reconciliation
+
+##### Get Payments by User
+**Endpoint**: `GET /api/payments/user/{userId}`
+
+**Example**: `GET /api/payments/user/1?page=0&size=10`
+
+**Response**: `200 OK` - List or Page of all payments made by the user
+
+##### Search by Payment Date Range
+**Endpoint**: `GET /api/payments/search/payment-date`
+
+**Query Parameters**:
+- `startDate` (required): Start date (format: `yyyy-MM-dd`)
+- `endDate` (required): End date (format: `yyyy-MM-dd`)
+- `page`, `size`, `sortBy`, `sortDirection` (optional)
+
+**Example**: `GET /api/payments/search/payment-date?startDate=2025-11-01&endDate=2025-11-30`
+
+**Response**: `200 OK` - List or Page of payments within date range
+
+**Use Case**: Monthly payment reports and reconciliation
+
+##### Get Completed Payments by Method
+**Endpoint**: `GET /api/payments/completed/method/{method}`
+
+**Example**: `GET /api/payments/completed/method/CARD?page=0&size=20`
+
+**Response**: `200 OK` - List or Page of successfully completed payments by method
+
+**Use Case**: Revenue analysis by payment channel
+
+#### Payment Processing Operations
+
+##### Process a Payment
+**Endpoint**: `POST /api/payments/{id}/process`
+
+**Example**: `POST /api/payments/1/process`
+
+**Response**: `200 OK`
+```json
+{
+  "id": 1,
+  "amount": 5.00,
+  "paymentDate": "2025-11-27",
+  "paymentMethod": "CARD",
+  "status": "PENDING",
+  ...
+}
+```
+
+**Notes**:
+- Only `PENDING` payments can be processed
+- Sets payment date if not already set
+- Prepares payment for completion
+
+##### Complete a Payment
+**Endpoint**: `POST /api/payments/{id}/complete`
+
+**Query Parameters**:
+- `transactionId` (optional): External transaction identifier
+
+**Example**: `POST /api/payments/1/complete?transactionId=TXN-987654321`
+
+**Response**: `200 OK`
+```json
+{
+  "id": 1,
+  "amount": 5.00,
+  "paymentDate": "2025-11-27",
+  "paymentMethod": "CARD",
+  "transactionId": "TXN-987654321",
+  "status": "COMPLETED",
+  ...
+}
+```
+
+**Notes**:
+- Validates payment is not already completed
+- Updates payment date to current date
+- Validates transaction ID uniqueness
+- Marks payment as successfully completed
+
+##### Fail a Payment
+**Endpoint**: `POST /api/payments/{id}/fail`
+
+**Query Parameters**:
+- `reason` (optional): Reason for payment failure
+
+**Example**: `POST /api/payments/1/fail?reason=Insufficient%20funds`
+
+**Response**: `200 OK`
+```json
+{
+  "id": 1,
+  "amount": 5.00,
+  "paymentDate": "2025-11-27",
+  "paymentMethod": "CARD",
+  "status": "FAILED",
+  ...
+}
+```
+
+**Notes**:
+- Cannot fail already completed payments
+- Used when payment processing encounters errors
+
+##### Refund a Payment
+**Endpoint**: `POST /api/payments/{id}/refund`
+
+**Example**: `POST /api/payments/3/refund`
+
+**Response**: `201 CREATED`
+```json
+{
+  "id": 10,
+  "amount": -5.00,
+  "paymentDate": "2025-11-28",
+  "paymentMethod": "CARD",
+  "transactionId": "REFUND-3-1732752000000",
+  "status": "COMPLETED",
+  "fine": { ... }
+}
+```
+
+**Notes**:
+- Only `COMPLETED` payments can be refunded
+- Creates new payment record with negative amount
+- Auto-generates refund transaction ID: `REFUND-{originalId}-{timestamp}`
+- Maintains payment audit trail
+
+#### Financial Calculations
+
+##### Get Total Paid Amount by Fine ID
+**Endpoint**: `GET /api/payments/fine/{fineId}/total-paid`
+
+**Example**: `GET /api/payments/fine/1/total-paid`
+
+**Response**: `200 OK`
+```json
+{
+  "totalPaid": 5.00
+}
+```
+
+**Use Case**: Calculate how much has been paid towards a fine (supports partial payments)
+
+##### Get Total Paid Amount by User ID
+**Endpoint**: `GET /api/payments/user/{userId}/total-paid`
+
+**Example**: `GET /api/payments/user/1/total-paid`
+
+**Response**: `200 OK`
+```json
+{
+  "totalPaid": 25.50
+}
+```
+
+**Use Case**: Track user's total payment history
+
+##### Get Total Revenue by Date Range
+**Endpoint**: `GET /api/payments/revenue`
+
+**Query Parameters**:
+- `startDate` (required): Start date (format: `yyyy-MM-dd`)
+- `endDate` (required): End date (format: `yyyy-MM-dd`)
+
+**Example**: `GET /api/payments/revenue?startDate=2025-11-01&endDate=2025-11-30`
+
+**Response**: `200 OK`
+```json
+{
+  "totalRevenue": 1250.00
+}
+```
+
+**Use Case**: Monthly/quarterly revenue reporting
+
+#### Validation Endpoints
+
+##### Check if Transaction ID Exists
+**Endpoint**: `GET /api/payments/exists/transaction/{transactionId}`
+
+**Example**: `GET /api/payments/exists/transaction/TXN-123456789`
+
+**Response**: `200 OK`
+```json
+{
+  "exists": true
+}
+```
+
+**Use Case**: Prevent duplicate transaction processing
+
+#### Common Use Cases
+
+##### Complete Payment Workflow
+1. Create payment: `POST /api/payments`
+2. Process payment: `POST /api/payments/{id}/process`
+3. External payment processing...
+4. Complete payment: `POST /api/payments/{id}/complete?transactionId=XXX`
+5. Verify completion: `GET /api/payments/{id}`
+
+##### Handle Payment Failure
+1. Attempt payment processing
+2. If fails: `POST /api/payments/{id}/fail?reason=...`
+3. Notify user of failure
+4. Allow retry with new payment
+
+##### Partial Payment Scenario
+1. Create first payment: `POST /api/payments` (amount: 10.00 for 25.00 fine)
+2. Complete payment: `POST /api/payments/{id}/complete`
+3. Create second payment: `POST /api/payments` (amount: 15.00 for same fine)
+4. Check total paid: `GET /api/payments/fine/{fineId}/total-paid`
+5. Complete when total equals fine amount
+
+##### Process Refund
+1. Verify payment completed: `GET /api/payments/{id}`
+2. Issue refund: `POST /api/payments/{id}/refund`
+3. Refund payment record created automatically
+4. Check updated balance: `GET /api/payments/fine/{fineId}/total-paid`
+
+##### Monthly Financial Report
+1. Get all payments in month: `GET /api/payments/search/payment-date?startDate=...&endDate=...`
+2. Calculate revenue: `GET /api/payments/revenue?startDate=...&endDate=...`
+3. Break down by method: `GET /api/payments/completed/method/{method}`
+4. Analyze by status: `GET /api/payments/status/COMPLETED`
+
+##### User Payment History
+1. Get all payments: `GET /api/payments/user/{userId}?page=0&size=20`
+2. Get total paid: `GET /api/payments/user/{userId}/total-paid`
+3. Filter by date: `GET /api/payments/search/payment-date?startDate=...&endDate=...`
+
+##### Payment Reconciliation
+1. Get completed payments: `GET /api/payments/status/COMPLETED?page=0&size=100`
+2. Verify transaction IDs exist
+3. Calculate total revenue: `GET /api/payments/revenue?startDate=...&endDate=...`
+4. Compare with external payment gateway records
 
 ---
 
