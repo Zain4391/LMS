@@ -31,6 +31,7 @@ A Spring Boot-based Library Management System that provides comprehensive functi
   - [Book Management API](#book-management-api)
   - [Book Copy Management API](#book-copy-management-api)
   - [Borrowed (Borrowing System) API](#borrowed-borrowing-system-api)
+  - [Fine Management API](#fine-management-api)
   - [Error Responses](#error-responses)
 - [Architecture & Design Patterns](#-architecture--design-patterns)
   - [Layered Architecture](#layered-architecture)
@@ -57,7 +58,7 @@ A Spring Boot-based Library Management System that provides comprehensive functi
   - **Advanced Search**: Search by title, author, genre, language, and more
 - **Book Copy Management**: Track individual book copies with barcodes, conditions, and locations
 - **Borrowing System**: Complete borrowing workflow with due dates and return tracking
-- **Fine Management**: Automated fine calculation and tracking for overdue books
+- **Fine Management**: Automated fine calculation, payment tracking, and overdue penalties
 - **Payment Processing**: Support for multiple payment methods and transaction tracking
 - **Security**: Password encryption using BCrypt
 - **Database Integration**: PostgreSQL database with JPA/Hibernate
@@ -154,6 +155,7 @@ src/
 │   │       │   ├── BookController.java
 │   │       │   ├── BookCopyController.java
 │   │       │   ├── BorrowedController.java
+│   │       │   ├── FineController.java
 │   │       │   ├── GenreController.java
 │   │       │   └── PublisherController.java
 │   │       ├── dto/              # Data Transfer Objects
@@ -165,6 +167,8 @@ src/
 │   │       │   ├── BookCopyResponseDTO.java
 │   │       │   ├── BorrowedRequestDTO.java
 │   │       │   ├── BorrowedResponseDTO.java
+│   │       │   ├── FineRequestDTO.java
+│   │       │   ├── FineResponseDTO.java
 │   │       │   ├── GenreRequestDTO.java
 │   │       │   ├── GenreResponseDTO.java
 │   │       │   ├── PublisherRequestDTO.java
@@ -199,6 +203,7 @@ src/
 │   │       │   ├── BookMapper.java
 │   │       │   ├── BookCopyMapper.java
 │   │       │   ├── BorrowedMapper.java
+│   │       │   ├── FineMapper.java
 │   │       │   ├── GenreMapper.java
 │   │       │   └── PublisherMapper.java
 │   │       ├── repository/       # Data repositories
@@ -218,12 +223,14 @@ src/
 │   │       │   │   ├── BookService.java
 │   │       │   │   ├── BookCopyService.java
 │   │       │   │   ├── BorrowedService.java
+│   │       │   │   ├── FineService.java
 │   │       │   │   ├── GenreService.java
 │   │       │   │   └── PublisherService.java
 │   │       │   ├── AuthorServiceImpl.java
 │   │       │   ├── BookServiceImpl.java
 │   │       │   ├── BookCopyImpl.java
 │   │       │   ├── BorrowedImpl.java
+│   │       │   ├── FineServiceImpl.java
 │   │       │   ├── GenreServiceImpl.java
 │   │       │   └── PublisherServiceImpl.java
 │   │       └── LmsApplication.java
@@ -1371,6 +1378,330 @@ The Borrowed API manages the complete borrowing workflow including checkout, ret
 1. Active borrows: `GET /api/borrowed/user/{userId}/active`
 2. Overdue items: `GET /api/borrowed/user/{userId}/overdue`
 3. Borrow history: `GET /api/borrowed/user/{userId}?page=0&size=10`
+
+---
+
+### Fine Management API
+
+The Fine Management API handles all aspects of fines including automated assessment for overdue books, payment processing, and fine tracking.
+
+#### Core CRUD Operations
+
+##### 1. Create a Fine
+**Endpoint**: `POST /api/fines`
+
+**Request Body**:
+```json
+{
+  "amount": 5.00,
+  "assessedDate": "2025-11-27",
+  "status": "PENDING",
+  "reason": "Book returned 5 days late",
+  "borrowedId": 1
+}
+```
+
+**Notes**:
+- `status` is optional and defaults to `PENDING` if not provided
+- `reason` is optional but recommended for clarity
+
+**Response**: `201 CREATED`
+```json
+{
+  "id": 1,
+  "amount": 5.00,
+  "assessedDate": "2025-11-27",
+  "status": "PENDING",
+  "reason": "Book returned 5 days late",
+  "borrowed": {
+    "id": 1,
+    "borrowDate": "2025-11-01",
+    "dueDate": "2025-11-15",
+    "returnDate": "2025-11-20",
+    "status": "RETURNED",
+    "user": { ... },
+    "bookCopy": { ... }
+  }
+}
+```
+
+##### 2. Get Fine by ID
+**Endpoint**: `GET /api/fines/{id}`
+
+**Example**: `GET /api/fines/1`
+
+**Response**: `200 OK` - Returns FineResponseDTO
+
+##### 3. Get All Fines
+**Endpoint**: `GET /api/fines`
+
+**Query Parameters**:
+- `page` (optional): Page number (0-indexed)
+- `size` (optional): Number of items per page
+- `sortBy` (default: `assessedDate`): Field to sort by
+- `sortDirection` (default: `DESC`): `ASC` or `DESC`
+
+**Example**: `GET /api/fines?page=0&size=20&sortBy=amount&sortDirection=DESC`
+
+**Response**: `200 OK` - List or Page of FineResponseDTOs
+
+##### 4. Update Fine
+**Endpoint**: `PUT /api/fines/{id}`
+
+**Request Body**: Same as create
+
+**Response**: `200 OK` - Returns updated FineResponseDTO
+
+##### 5. Delete Fine
+**Endpoint**: `DELETE /api/fines/{id}`
+
+**Response**: `204 NO CONTENT`
+
+#### Search and Filter Endpoints
+
+##### Get Fine by Borrowed Record
+**Endpoint**: `GET /api/fines/borrowed/{borrowedId}`
+
+**Example**: `GET /api/fines/borrowed/5`
+
+**Response**: `200 OK` - Returns the fine associated with the borrowed record
+
+##### Get Fines by Status
+**Endpoint**: `GET /api/fines/status/{status}`
+
+**Status Values**: `PENDING`, `PAID`, `WAIVED`
+
+**Example**: `GET /api/fines/status/PENDING?page=0&size=50`
+
+**Response**: `200 OK` - List or Page of fines with specified status
+
+##### Get Fines by User
+**Endpoint**: `GET /api/fines/user/{userId}`
+
+**Example**: `GET /api/fines/user/1?page=0&size=10`
+
+**Response**: `200 OK` - List or Page of all fines for the user
+
+##### Get Pending Fines by User
+**Endpoint**: `GET /api/fines/user/{userId}/pending`
+
+**Example**: `GET /api/fines/user/1/pending`
+
+**Response**: `200 OK` - List or Page of unpaid fines for the user
+
+**Use Case**: Show user what they owe before allowing new borrows
+
+##### Search by Assessed Date Range
+**Endpoint**: `GET /api/fines/search/assessed-date`
+
+**Query Parameters**:
+- `startDate` (required): Start date (format: `yyyy-MM-dd`)
+- `endDate` (required): End date (format: `yyyy-MM-dd`)
+- `page`, `size`, `sortBy`, `sortDirection` (optional)
+
+**Example**: `GET /api/fines/search/assessed-date?startDate=2025-11-01&endDate=2025-11-30`
+
+**Response**: `200 OK` - List or Page of fines assessed within date range
+
+**Use Case**: Monthly fine reports and revenue tracking
+
+##### Search by Amount
+**Endpoint**: `GET /api/fines/search/amount`
+
+**Query Parameters**:
+- `amount` (required): Minimum amount
+- `page`, `size`, `sortBy`, `sortDirection` (optional)
+
+**Example**: `GET /api/fines/search/amount?amount=10.00`
+
+**Response**: `200 OK` - List or Page of fines greater than specified amount
+
+**Use Case**: Identify high-value fines requiring attention
+
+#### Payment Operations
+
+##### Pay a Fine
+**Endpoint**: `POST /api/fines/{id}/pay`
+
+**Example**: `POST /api/fines/1/pay`
+
+**Response**: `200 OK`
+```json
+{
+  "id": 1,
+  "amount": 5.00,
+  "assessedDate": "2025-11-27",
+  "status": "PAID",
+  "reason": "Book returned 5 days late",
+  "borrowed": { ... }
+}
+```
+
+**Notes**:
+- Only `PENDING` fines can be paid
+- Status automatically updated to `PAID`
+- Throws exception if fine is already paid or waived
+
+##### Waive a Fine
+**Endpoint**: `POST /api/fines/{id}/waive`
+
+**Example**: `POST /api/fines/3/waive`
+
+**Response**: `200 OK`
+```json
+{
+  "id": 3,
+  "amount": 2.50,
+  "assessedDate": "2025-11-20",
+  "status": "WAIVED",
+  "reason": "First time offender - waived by librarian",
+  "borrowed": { ... }
+}
+```
+
+**Notes**:
+- Only `PENDING` fines can be waived
+- Typically used by librarians/admins for special cases
+- Status automatically updated to `WAIVED`
+
+#### Automated Fine Assessment
+
+##### Assess Fine for Overdue Book
+**Endpoint**: `POST /api/fines/assess/borrowed/{borrowedId}`
+
+**Query Parameters**:
+- `dailyRate` (default: 1.00): Fine amount per day overdue
+
+**Example**: `POST /api/fines/assess/borrowed/5?dailyRate=1.50`
+
+**Response**: `201 CREATED`
+```json
+{
+  "id": 10,
+  "amount": 7.50,
+  "assessedDate": "2025-11-27",
+  "status": "PENDING",
+  "reason": "Book returned 5 day(s) late at 1.50 per day",
+  "borrowed": {
+    "id": 5,
+    "dueDate": "2025-11-15",
+    "returnDate": "2025-11-20",
+    ...
+  }
+}
+```
+
+**Business Logic**:
+- Automatically calculates days overdue: `returnDate - dueDate`
+- Multiplies by daily rate to get total fine
+- Generates descriptive reason
+- Prevents duplicate fines for same borrowed record
+- Validates that book is actually overdue
+
+**Use Case**: Automatically assess fines when processing book returns
+
+#### Financial Calculations
+
+##### Get Total Pending Fines by User
+**Endpoint**: `GET /api/fines/user/{userId}/total-pending`
+
+**Example**: `GET /api/fines/user/1/total-pending`
+
+**Response**: `200 OK`
+```json
+{
+  "totalPending": 15.50
+}
+```
+
+**Use Case**: Check if user can borrow more books (enforce payment before new borrows)
+
+##### Get Total Fines by Status
+**Endpoint**: `GET /api/fines/total/status/{status}`
+
+**Example**: `GET /api/fines/total/status/PAID`
+
+**Response**: `200 OK`
+```json
+{
+  "total": 250.00
+}
+```
+
+**Use Case**: Calculate total revenue from paid fines
+
+##### Count Fines by Status
+**Endpoint**: `GET /api/fines/count/status/{status}`
+
+**Example**: `GET /api/fines/count/status/PENDING`
+
+**Response**: `200 OK`
+```json
+{
+  "count": 42
+}
+```
+
+**Use Case**: Dashboard statistics and reporting
+
+#### Validation Endpoints
+
+##### Check if Fine Exists for Borrowed Record
+**Endpoint**: `GET /api/fines/exists/borrowed/{borrowedId}`
+
+**Example**: `GET /api/fines/exists/borrowed/5`
+
+**Response**: `200 OK`
+```json
+{
+  "exists": true
+}
+```
+
+**Use Case**: Prevent duplicate fine creation
+
+##### Check if User Has Pending Fines
+**Endpoint**: `GET /api/fines/user/{userId}/has-pending`
+
+**Example**: `GET /api/fines/user/1/has-pending`
+
+**Response**: `200 OK`
+```json
+{
+  "hasPendingFines": true
+}
+```
+
+**Use Case**: Block borrowing if user has unpaid fines
+
+#### Common Use Cases
+
+##### Complete Return with Fine Assessment
+1. Process return: `POST /api/borrowed/{id}/return`
+2. Check if overdue and assess fine: `POST /api/fines/assess/borrowed/{borrowedId}?dailyRate=1.00`
+3. Notify user of fine amount
+
+##### User Payment Workflow
+1. Check pending fines: `GET /api/fines/user/{userId}/pending`
+2. Get total owed: `GET /api/fines/user/{userId}/total-pending`
+3. Process payment: `POST /api/fines/{id}/pay`
+4. Verify payment: `GET /api/fines/user/{userId}/has-pending`
+
+##### Librarian Fine Management
+1. View all pending fines: `GET /api/fines/status/PENDING?page=0&size=100`
+2. Review high-value fines: `GET /api/fines/search/amount?amount=10.00`
+3. Waive special cases: `POST /api/fines/{id}/waive`
+
+##### Monthly Financial Report
+1. Fines assessed: `GET /api/fines/search/assessed-date?startDate=2025-11-01&endDate=2025-11-30`
+2. Revenue collected: `GET /api/fines/total/status/PAID`
+3. Outstanding fines: `GET /api/fines/total/status/PENDING`
+4. Count statistics: `GET /api/fines/count/status/{status}`
+
+##### Borrowing Validation
+1. Check user eligibility: `GET /api/fines/user/{userId}/has-pending`
+2. If has pending fines, get total: `GET /api/fines/user/{userId}/total-pending`
+3. Block borrowing until fines are paid or under threshold
 
 ---
 
