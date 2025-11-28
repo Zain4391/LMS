@@ -19,22 +19,17 @@ import java.util.Optional;
 @Repository
 public interface PaymentRepository extends JpaRepository<Payment, Long> {
     
-    // Find payments by fine
     List<Payment> findByFine(Fine fine);
     Page<Payment> findByFine(Fine fine, Pageable pageable);
     
-    // Find payment by transaction ID
     Optional<Payment> findByTransactionId(String transactionId);
     
-    // Find payments by status
     List<Payment> findByStatus(PaymentStatus status);
     Page<Payment> findByStatus(PaymentStatus status, Pageable pageable);
     
-    // Find payments by payment method
     List<Payment> findByPaymentMethod(PaymentMethod paymentMethod);
     Page<Payment> findByPaymentMethod(PaymentMethod paymentMethod, Pageable pageable);
     
-    // Find payments by user (through fine)
     @Query("SELECT p FROM Payment p WHERE p.fine.borrowed.user.id = :userId")
     List<Payment> findByUserId(@Param("userId") Long userId);
     
@@ -56,7 +51,6 @@ public interface PaymentRepository extends JpaRepository<Payment, Long> {
     @Query("SELECT SUM(p.amount) FROM Payment p WHERE p.fine.borrowed.user.id = :userId AND p.status = com.LibraryManagementSystem.LMS.enums.PaymentStatus.COMPLETED")
     BigDecimal calculateTotalPaidAmountByUserId(@Param("userId") Long userId);
     
-    // Calculate total revenue by date range
     @Query("SELECT SUM(p.amount) FROM Payment p WHERE p.paymentDate BETWEEN :startDate AND :endDate AND p.status = com.LibraryManagementSystem.LMS.enums.PaymentStatus.COMPLETED")
     BigDecimal calculateTotalRevenueBetween(@Param("startDate") LocalDate startDate, @Param("endDate") LocalDate endDate);
     
@@ -67,6 +61,5 @@ public interface PaymentRepository extends JpaRepository<Payment, Long> {
     @Query("SELECT p FROM Payment p WHERE p.paymentMethod = :method AND p.status = com.LibraryManagementSystem.LMS.enums.PaymentStatus.COMPLETED")
     Page<Payment> findCompletedPaymentsByMethod(@Param("method") PaymentMethod method, Pageable pageable);
     
-    // Check if transaction ID exists
     boolean existsByTransactionId(String transactionId);
 }

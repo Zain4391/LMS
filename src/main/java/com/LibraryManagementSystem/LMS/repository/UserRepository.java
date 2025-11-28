@@ -16,14 +16,11 @@ import java.util.Optional;
 @Repository
 public interface UserRepository extends JpaRepository<User, Long> {
     
-    // Find user by email
     Optional<User> findByEmail(String email);
     
-    // Find users by status
     List<User> findByStatus(Status status);
     Page<User> findByStatus(Status status, Pageable pageable);
     
-    // Find users by name containing (case-insensitive)
     List<User> findByNameContainingIgnoreCase(String name);
     Page<User> findByNameContainingIgnoreCase(String name, Pageable pageable);
     
@@ -46,7 +43,6 @@ public interface UserRepository extends JpaRepository<User, Long> {
            "WHERE b.dueDate < :currentDate AND b.status = com.LibraryManagementSystem.LMS.enums.BorrowStatus.BORROWED")
     Page<User> findUsersWithOverdueBooks(@Param("currentDate") LocalDate currentDate, Pageable pageable);
     
-    // Find users with pending fines
     @Query("SELECT DISTINCT u FROM User u JOIN Borrowed b ON u.id = b.user.id " +
            "JOIN Fine f ON b.id = f.borrowed.id WHERE f.status = com.LibraryManagementSystem.LMS.enums.FineStatus.PENDING")
     List<User> findUsersWithPendingFines();
@@ -55,12 +51,9 @@ public interface UserRepository extends JpaRepository<User, Long> {
            "JOIN Fine f ON b.id = f.borrowed.id WHERE f.status = com.LibraryManagementSystem.LMS.enums.FineStatus.PENDING")
     Page<User> findUsersWithPendingFines(Pageable pageable);
     
-    // Check if email exists
     boolean existsByEmail(String email);
     
-    // Check if phone number exists
     boolean existsByPhoneNumber(String phoneNumber);
     
-    // Count users by status
     long countByStatus(Status status);
 }

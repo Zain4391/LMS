@@ -14,34 +14,25 @@ import java.util.Optional;
 @Repository
 public interface LibrarianRepository extends JpaRepository<Librarian, Long> {
     
-    // Find librarian by email
     Optional<Librarian> findByEmail(String email);
     
-    // Find librarians by role
     List<Librarian> findByRole(Role role);
     Page<Librarian> findByRole(Role role, Pageable pageable);
     
-    // Find librarians by status
     List<Librarian> findByStatus(Status status);
     Page<Librarian> findByStatus(Status status, Pageable pageable);
     
-    // Find librarians by name containing (case-insensitive)
     List<Librarian> findByNameContainingIgnoreCase(String name);
     Page<Librarian> findByNameContainingIgnoreCase(String name, Pageable pageable);
     
-    // Find active librarians
     List<Librarian> findByStatusAndRole(Status status, Role role);
     Page<Librarian> findByStatusAndRole(Status status, Role role, Pageable pageable);
     
-    // Check if email exists
     boolean existsByEmail(String email);
     
-    // Check if phone number exists
     boolean existsByPhoneNumber(String phoneNumber);
     
-    // Count librarians by role
     long countByRole(Role role);
     
-    // Count librarians by status
     long countByStatus(Status status);
 }

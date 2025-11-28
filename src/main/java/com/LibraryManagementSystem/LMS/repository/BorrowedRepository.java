@@ -18,27 +18,21 @@ import java.util.Optional;
 @Repository
 public interface BorrowedRepository extends JpaRepository<Borrowed, Long> {
     
-    // Find all borrowed records by user
     List<Borrowed> findByUser(User user);
     Page<Borrowed> findByUser(User user, Pageable pageable);
     
-    // Find borrowed records by user ID
     List<Borrowed> findByUserId(Long userId);
     Page<Borrowed> findByUserId(Long userId, Pageable pageable);
     
-    // Find borrowed records by status
     List<Borrowed> findByStatus(BorrowStatus status);
     Page<Borrowed> findByStatus(BorrowStatus status, Pageable pageable);
     
-    // Find borrowed records by user and status
     List<Borrowed> findByUserAndStatus(User user, BorrowStatus status);
     Page<Borrowed> findByUserAndStatus(User user, BorrowStatus status, Pageable pageable);
     
-    // Find borrowed records by user ID and status
     List<Borrowed> findByUserIdAndStatus(Long userId, BorrowStatus status);
     Page<Borrowed> findByUserIdAndStatus(Long userId, BorrowStatus status, Pageable pageable);
     
-    // Find active borrowed records by user (not returned yet)
     @Query("SELECT b FROM Borrowed b WHERE b.user.id = :userId AND b.status = com.LibraryManagementSystem.LMS.enums.BorrowStatus.BORROWED")
     List<Borrowed> findActiveBorrowsByUserId(@Param("userId") Long userId);
     
@@ -59,40 +53,32 @@ public interface BorrowedRepository extends JpaRepository<Borrowed, Long> {
     @Query("SELECT b FROM Borrowed b WHERE b.user.id = :userId AND b.dueDate < :currentDate AND b.status = com.LibraryManagementSystem.LMS.enums.BorrowStatus.BORROWED")
     Page<Borrowed> findOverdueRecordsByUserId(@Param("userId") Long userId, @Param("currentDate") LocalDate currentDate, Pageable pageable);
     
-    // Find borrowed records by book copy
     List<Borrowed> findByBookCopy(BookCopy bookCopy);
     Page<Borrowed> findByBookCopy(BookCopy bookCopy, Pageable pageable);
     
-    // Find borrowed records by book copy ID
     List<Borrowed> findByBookCopyId(Long bookCopyId);
     Page<Borrowed> findByBookCopyId(Long bookCopyId, Pageable pageable);
     
-    // Find current borrow record for a book copy
     @Query("SELECT b FROM Borrowed b WHERE b.bookCopy.id = :bookCopyId AND b.status = com.LibraryManagementSystem.LMS.enums.BorrowStatus.BORROWED ORDER BY b.borrowDate DESC")
     Optional<Borrowed> findCurrentBorrowByBookCopyId(@Param("bookCopyId") Long bookCopyId);
     
-    // Find borrowed records by date range
     @Query("SELECT b FROM Borrowed b WHERE b.borrowDate BETWEEN :startDate AND :endDate")
     List<Borrowed> findByBorrowDateBetween(@Param("startDate") LocalDate startDate, @Param("endDate") LocalDate endDate);
     
     @Query("SELECT b FROM Borrowed b WHERE b.borrowDate BETWEEN :startDate AND :endDate")
     Page<Borrowed> findByBorrowDateBetween(@Param("startDate") LocalDate startDate, @Param("endDate") LocalDate endDate, Pageable pageable);
     
-    // Find records due soon (within specified days)
     @Query("SELECT b FROM Borrowed b WHERE b.dueDate BETWEEN :today AND :futureDate AND b.status = com.LibraryManagementSystem.LMS.enums.BorrowStatus.BORROWED")
     List<Borrowed> findRecordsDueSoon(@Param("today") LocalDate today, @Param("futureDate") LocalDate futureDate);
     
     @Query("SELECT b FROM Borrowed b WHERE b.dueDate BETWEEN :today AND :futureDate AND b.status = com.LibraryManagementSystem.LMS.enums.BorrowStatus.BORROWED")
     Page<Borrowed> findRecordsDueSoon(@Param("today") LocalDate today, @Param("futureDate") LocalDate futureDate, Pageable pageable);
     
-    // Count active borrows by user
     @Query("SELECT COUNT(b) FROM Borrowed b WHERE b.user.id = :userId AND b.status = com.LibraryManagementSystem.LMS.enums.BorrowStatus.BORROWED")
     long countActiveBorrowsByUserId(@Param("userId") Long userId);
     
-    // Count by status
     long countByStatus(BorrowStatus status);
     
-    // Count overdue records
     @Query("SELECT COUNT(b) FROM Borrowed b WHERE b.dueDate < :currentDate AND b.status = com.LibraryManagementSystem.LMS.enums.BorrowStatus.BORROWED")
     long countOverdueRecords(@Param("currentDate") LocalDate currentDate);
 }
