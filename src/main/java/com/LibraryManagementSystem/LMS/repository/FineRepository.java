@@ -33,10 +33,10 @@ public interface FineRepository extends JpaRepository<Fine, Long> {
     Page<Fine> findByUserId(@Param("userId") Long userId, Pageable pageable);
     
     // Find pending fines by user
-    @Query("SELECT f FROM Fine f WHERE f.borrowed.user.id = :userId AND f.status = 'PENDING'")
+    @Query("SELECT f FROM Fine f WHERE f.borrowed.user.id = :userId AND f.status = com.LibraryManagementSystem.LMS.enums.FineStatus.PENDING")
     List<Fine> findPendingFinesByUserId(@Param("userId") Long userId);
     
-    @Query("SELECT f FROM Fine f WHERE f.borrowed.user.id = :userId AND f.status = 'PENDING'")
+    @Query("SELECT f FROM Fine f WHERE f.borrowed.user.id = :userId AND f.status = com.LibraryManagementSystem.LMS.enums.FineStatus.PENDING")
     Page<Fine> findPendingFinesByUserId(@Param("userId") Long userId, Pageable pageable);
     
     // Find fines by date range
@@ -54,7 +54,7 @@ public interface FineRepository extends JpaRepository<Fine, Long> {
     Page<Fine> findByAmountGreaterThan(@Param("amount") BigDecimal amount, Pageable pageable);
     
     // Calculate total pending fines by user
-    @Query("SELECT SUM(f.amount) FROM Fine f WHERE f.borrowed.user.id = :userId AND f.status = 'PENDING'")
+    @Query("SELECT SUM(f.amount) FROM Fine f WHERE f.borrowed.user.id = :userId AND f.status = com.LibraryManagementSystem.LMS.enums.FineStatus.PENDING")
     BigDecimal calculateTotalPendingFinesByUserId(@Param("userId") Long userId);
     
     // Calculate total fines by status

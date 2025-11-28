@@ -39,20 +39,20 @@ public interface UserRepository extends JpaRepository<User, Long> {
     
     // Find users with overdue books
     @Query("SELECT DISTINCT u FROM User u JOIN Borrowed b ON u.id = b.user.id " +
-           "WHERE b.dueDate < :currentDate AND b.status = 'BORROWED'")
+           "WHERE b.dueDate < :currentDate AND b.status = com.LibraryManagementSystem.LMS.enums.BorrowStatus.BORROWED")
     List<User> findUsersWithOverdueBooks(@Param("currentDate") LocalDate currentDate);
     
     @Query("SELECT DISTINCT u FROM User u JOIN Borrowed b ON u.id = b.user.id " +
-           "WHERE b.dueDate < :currentDate AND b.status = 'BORROWED'")
+           "WHERE b.dueDate < :currentDate AND b.status = com.LibraryManagementSystem.LMS.enums.BorrowStatus.BORROWED")
     Page<User> findUsersWithOverdueBooks(@Param("currentDate") LocalDate currentDate, Pageable pageable);
     
     // Find users with pending fines
     @Query("SELECT DISTINCT u FROM User u JOIN Borrowed b ON u.id = b.user.id " +
-           "JOIN Fine f ON b.id = f.borrowed.id WHERE f.status = 'PENDING'")
+           "JOIN Fine f ON b.id = f.borrowed.id WHERE f.status = com.LibraryManagementSystem.LMS.enums.FineStatus.PENDING")
     List<User> findUsersWithPendingFines();
     
     @Query("SELECT DISTINCT u FROM User u JOIN Borrowed b ON u.id = b.user.id " +
-           "JOIN Fine f ON b.id = f.borrowed.id WHERE f.status = 'PENDING'")
+           "JOIN Fine f ON b.id = f.borrowed.id WHERE f.status = com.LibraryManagementSystem.LMS.enums.FineStatus.PENDING")
     Page<User> findUsersWithPendingFines(Pageable pageable);
     
     // Check if email exists

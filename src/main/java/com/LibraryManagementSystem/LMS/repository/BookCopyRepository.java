@@ -40,10 +40,10 @@ public interface BookCopyRepository extends JpaRepository<BookCopy, Long> {
     Page<BookCopy> findByBookIdAndStatus(Long bookId, BookCopyStatus status, Pageable pageable);
     
     // Find available copies of a book
-    @Query("SELECT bc FROM BookCopy bc WHERE bc.book.id = :bookId AND bc.status = 'AVAILABLE'")
+    @Query("SELECT bc FROM BookCopy bc WHERE bc.book.id = :bookId AND bc.status = com.LibraryManagementSystem.LMS.enums.BookCopyStatus.AVAILABLE")
     List<BookCopy> findAvailableCopiesByBookId(@Param("bookId") Long bookId);
     
-    @Query("SELECT bc FROM BookCopy bc WHERE bc.book.id = :bookId AND bc.status = 'AVAILABLE'")
+    @Query("SELECT bc FROM BookCopy bc WHERE bc.book.id = :bookId AND bc.status = com.LibraryManagementSystem.LMS.enums.BookCopyStatus.AVAILABLE")
     Page<BookCopy> findAvailableCopiesByBookId(@Param("bookId") Long bookId, Pageable pageable);
     
     // Find copies by location
@@ -68,7 +68,7 @@ public interface BookCopyRepository extends JpaRepository<BookCopy, Long> {
     long countByBookId(Long bookId);
     
     // Count available copies by book
-    @Query("SELECT COUNT(bc) FROM BookCopy bc WHERE bc.book.id = :bookId AND bc.status = 'AVAILABLE'")
+    @Query("SELECT COUNT(bc) FROM BookCopy bc WHERE bc.book.id = :bookId AND bc.status = com.LibraryManagementSystem.LMS.enums.BookCopyStatus.AVAILABLE")
     long countAvailableCopiesByBookId(@Param("bookId") Long bookId);
     
     // Count copies by status

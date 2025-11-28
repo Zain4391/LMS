@@ -6,6 +6,13 @@ import com.LibraryManagementSystem.LMS.entity.BookCopy;
 import com.LibraryManagementSystem.LMS.enums.BookCopyStatus;
 import com.LibraryManagementSystem.LMS.mapper.BookCopyMapper;
 import com.LibraryManagementSystem.LMS.service.interfaces.BookCopyService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -20,6 +27,7 @@ import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/book-copies")
+@Tag(name = "Book Copies", description = "Book copy management APIs - Manage individual physical copies of books including barcodes, locations, conditions, and availability status")
 public class BookCopyController {
     
     private final BookCopyService bookCopyService;
@@ -31,8 +39,20 @@ public class BookCopyController {
     }
     
     // Create new BookCopy
+    @Operation(
+            summary = "Create a new book copy",
+            description = "Creates a new physical copy of a book with a unique barcode, location, and condition information"
+    )
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "201", description = "Book copy created successfully",
+                    content = @Content(schema = @Schema(implementation = BookCopyResponseDTO.class))),
+            @ApiResponse(responseCode = "400", description = "Invalid input data - validation failed"),
+            @ApiResponse(responseCode = "409", description = "Book copy with the same barcode already exists")
+    })
     @PostMapping
-    public ResponseEntity<BookCopyResponseDTO> createBookCopy(@Valid @RequestBody BookCopyRequestDTO requestDTO) {
+    public ResponseEntity<BookCopyResponseDTO> createBookCopy(
+            @Parameter(description = "Book copy details to create", required = true)
+            @Valid @RequestBody BookCopyRequestDTO requestDTO) {
         BookCopy bookCopy = bookCopyMapper.toEntity(requestDTO);
         BookCopy createdBookCopy = bookCopyService.create(bookCopy);
         BookCopyResponseDTO responseDTO = bookCopyMapper.toResponseDTO(createdBookCopy);
@@ -40,19 +60,41 @@ public class BookCopyController {
     }
     
     // Get BookCopy by ID
+    @Operation(
+            summary = "Get book copy by ID",
+            description = "Retrieves a specific book copy's details by its unique identifier"
+    )
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Book copy found successfully",
+                    content = @Content(schema = @Schema(implementation = BookCopyResponseDTO.class))),
+            @ApiResponse(responseCode = "404", description = "Book copy not found with the given ID")
+    })
     @GetMapping("/{id}")
-    public ResponseEntity<BookCopyResponseDTO> getBookCopyById(@PathVariable Long id) {
+    public ResponseEntity<BookCopyResponseDTO> getBookCopyById(
+            @Parameter(description = "Book copy ID", required = true, example = "1")
+            @PathVariable Long id) {
         BookCopy bookCopy = bookCopyService.getById(id);
         BookCopyResponseDTO responseDTO = bookCopyMapper.toResponseDTO(bookCopy);
         return new ResponseEntity<>(responseDTO, HttpStatus.OK);
     }
     
     // Get all BookCopies (with optional pagination)
+    @Operation(
+            summary = "Get all book copies",
+            description = "Retrieves all book copies in the system with optional pagination and sorting"
+    )
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Book copies retrieved successfully")
+    })
     @GetMapping
     public ResponseEntity<?> getAllBookCopies(
+            @Parameter(description = "Page number (0-indexed)", example = "0")
             @RequestParam(required = false) Integer page,
+            @Parameter(description = "Number of items per page", example = "10")
             @RequestParam(required = false) Integer size,
+            @Parameter(description = "Field to sort by", example = "barcode")
             @RequestParam(defaultValue = "id") String sortBy,
+            @Parameter(description = "Sort direction (ASC or DESC)", example = "ASC")
             @RequestParam(defaultValue = "ASC") String sortDirection) {
         
         if (page != null && size != null) {
@@ -73,9 +115,22 @@ public class BookCopyController {
     }
     
     // Update BookCopy by ID
+    @Operation(
+            summary = "Update book copy",
+            description = "Updates an existing book copy's information including location, condition, and status"
+    )
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Book copy updated successfully",
+                    content = @Content(schema = @Schema(implementation = BookCopyResponseDTO.class))),
+            @ApiResponse(responseCode = "400", description = "Invalid input data - validation failed"),
+            @ApiResponse(responseCode = "404", description = "Book copy not found with the given ID"),
+            @ApiResponse(responseCode = "409", description = "Barcode conflicts with existing book copy")
+    })
     @PutMapping("/{id}")
     public ResponseEntity<BookCopyResponseDTO> updateBookCopy(
+            @Parameter(description = "Book copy ID", required = true, example = "1")
             @PathVariable Long id,
+            @Parameter(description = "Updated book copy details", required = true)
             @Valid @RequestBody BookCopyRequestDTO requestDTO) {
         BookCopy bookCopy = bookCopyMapper.toEntity(requestDTO);
         BookCopy updatedBookCopy = bookCopyService.update(id, bookCopy);
@@ -84,34 +139,78 @@ public class BookCopyController {
     }
     
     // Delete BookCopy by ID
+    @Operation(
+            summary = "Delete book copy",
+            description = "Permanently deletes a book copy from the system. Note: Cannot delete copies with active borrows."
+    )
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "204", description = "Book copy deleted successfully"),
+            @ApiResponse(responseCode = "404", description = "Book copy not found with the given ID"),
+            @ApiResponse(responseCode = "409", description = "Cannot delete book copy - active borrows exist")
+    })
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deleteBookCopy(@PathVariable Long id) {
+    public ResponseEntity<Void> deleteBookCopy(
+            @Parameter(description = "Book copy ID", required = true, example = "1")
+            @PathVariable Long id) {
         bookCopyService.delete(id);
         return new ResponseEntity<>(HttpStatus.NO_CONTENT);
     }
     
     // Get BookCopy by barcode
+    @Operation(
+            summary = "Get book copy by barcode",
+            description = "Retrieves a specific book copy by its unique barcode identifier"
+    )
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Book copy found successfully",
+                    content = @Content(schema = @Schema(implementation = BookCopyResponseDTO.class))),
+            @ApiResponse(responseCode = "404", description = "Book copy not found with the given barcode")
+    })
     @GetMapping("/barcode/{barcode}")
-    public ResponseEntity<BookCopyResponseDTO> getBookCopyByBarcode(@PathVariable String barcode) {
+    public ResponseEntity<BookCopyResponseDTO> getBookCopyByBarcode(
+            @Parameter(description = "Book copy barcode", required = true, example = "BC-001-12345")
+            @PathVariable String barcode) {
         BookCopy bookCopy = bookCopyService.findByBarcode(barcode);
         BookCopyResponseDTO responseDTO = bookCopyMapper.toResponseDTO(bookCopy);
         return new ResponseEntity<>(responseDTO, HttpStatus.OK);
     }
     
     // Check if barcode exists
+    @Operation(
+            summary = "Check if barcode exists",
+            description = "Validates whether a barcode is already registered in the system"
+    )
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Existence check completed successfully")
+    })
     @GetMapping("/exists/barcode/{barcode}")
-    public ResponseEntity<Boolean> checkBarcodeExists(@PathVariable String barcode) {
+    public ResponseEntity<Boolean> checkBarcodeExists(
+            @Parameter(description = "Barcode to check", required = true, example = "BC-001-12345")
+            @PathVariable String barcode) {
         boolean exists = bookCopyService.existsByBarcode(barcode);
         return new ResponseEntity<>(exists, HttpStatus.OK);
     }
     
     // Get all copies of a specific book
+    @Operation(
+            summary = "Get all copies of a specific book",
+            description = "Retrieves all physical copies associated with a specific book with optional pagination"
+    )
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Book copies retrieved successfully"),
+            @ApiResponse(responseCode = "404", description = "Book not found with the given ID")
+    })
     @GetMapping("/book/{bookId}")
     public ResponseEntity<?> getBookCopiesByBookId(
+            @Parameter(description = "Book ID", required = true, example = "1")
             @PathVariable Long bookId,
+            @Parameter(description = "Page number (0-indexed)", example = "0")
             @RequestParam(required = false) Integer page,
+            @Parameter(description = "Number of items per page", example = "10")
             @RequestParam(required = false) Integer size,
+            @Parameter(description = "Field to sort by", example = "barcode")
             @RequestParam(defaultValue = "barcode") String sortBy,
+            @Parameter(description = "Sort direction (ASC or DESC)", example = "ASC")
             @RequestParam(defaultValue = "ASC") String sortDirection) {
         
         if (page != null && size != null) {
@@ -132,12 +231,24 @@ public class BookCopyController {
     }
     
     // Get BookCopies by status
+    @Operation(
+            summary = "Get book copies by status",
+            description = "Filters book copies by their current status (AVAILABLE, BORROWED, RESERVED, etc.) with optional pagination"
+    )
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Book copies retrieved successfully")
+    })
     @GetMapping("/status/{status}")
     public ResponseEntity<?> getBookCopiesByStatus(
+            @Parameter(description = "Book copy status", required = true, example = "AVAILABLE")
             @PathVariable BookCopyStatus status,
+            @Parameter(description = "Page number (0-indexed)", example = "0")
             @RequestParam(required = false) Integer page,
+            @Parameter(description = "Number of items per page", example = "10")
             @RequestParam(required = false) Integer size,
+            @Parameter(description = "Field to sort by", example = "barcode")
             @RequestParam(defaultValue = "barcode") String sortBy,
+            @Parameter(description = "Sort direction (ASC or DESC)", example = "ASC")
             @RequestParam(defaultValue = "ASC") String sortDirection) {
         
         if (page != null && size != null) {
@@ -158,13 +269,26 @@ public class BookCopyController {
     }
     
     // Get BookCopies by book ID and status
+    @Operation(
+            summary = "Get book copies by book ID and status",
+            description = "Retrieves book copies filtered by both book ID and status with optional pagination"
+    )
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Book copies retrieved successfully")
+    })
     @GetMapping("/book/{bookId}/status/{status}")
     public ResponseEntity<?> getBookCopiesByBookIdAndStatus(
+            @Parameter(description = "Book ID", required = true, example = "1")
             @PathVariable Long bookId,
+            @Parameter(description = "Book copy status", required = true, example = "AVAILABLE")
             @PathVariable BookCopyStatus status,
+            @Parameter(description = "Page number (0-indexed)", example = "0")
             @RequestParam(required = false) Integer page,
+            @Parameter(description = "Number of items per page", example = "10")
             @RequestParam(required = false) Integer size,
+            @Parameter(description = "Field to sort by", example = "barcode")
             @RequestParam(defaultValue = "barcode") String sortBy,
+            @Parameter(description = "Sort direction (ASC or DESC)", example = "ASC")
             @RequestParam(defaultValue = "ASC") String sortDirection) {
         
         if (page != null && size != null) {
@@ -185,12 +309,24 @@ public class BookCopyController {
     }
     
     // Get available copies of a specific book
+    @Operation(
+            summary = "Get available copies of a specific book",
+            description = "Retrieves only the available (not borrowed) copies of a specific book with optional pagination"
+    )
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Available book copies retrieved successfully")
+    })
     @GetMapping("/book/{bookId}/available")
     public ResponseEntity<?> getAvailableCopiesByBookId(
+            @Parameter(description = "Book ID", required = true, example = "1")
             @PathVariable Long bookId,
+            @Parameter(description = "Page number (0-indexed)", example = "0")
             @RequestParam(required = false) Integer page,
+            @Parameter(description = "Number of items per page", example = "10")
             @RequestParam(required = false) Integer size,
+            @Parameter(description = "Field to sort by", example = "barcode")
             @RequestParam(defaultValue = "barcode") String sortBy,
+            @Parameter(description = "Sort direction (ASC or DESC)", example = "ASC")
             @RequestParam(defaultValue = "ASC") String sortDirection) {
         
         if (page != null && size != null) {
@@ -211,12 +347,24 @@ public class BookCopyController {
     }
     
     // Get BookCopies by location
+    @Operation(
+            summary = "Get book copies by location",
+            description = "Retrieves all book copies stored in a specific library location/shelf with optional pagination"
+    )
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Book copies retrieved successfully")
+    })
     @GetMapping("/location/{location}")
     public ResponseEntity<?> getBookCopiesByLocation(
+            @Parameter(description = "Location/Shelf identifier", required = true, example = "A-101")
             @PathVariable String location,
+            @Parameter(description = "Page number (0-indexed)", example = "0")
             @RequestParam(required = false) Integer page,
+            @Parameter(description = "Number of items per page", example = "10")
             @RequestParam(required = false) Integer size,
+            @Parameter(description = "Field to sort by", example = "barcode")
             @RequestParam(defaultValue = "barcode") String sortBy,
+            @Parameter(description = "Sort direction (ASC or DESC)", example = "ASC")
             @RequestParam(defaultValue = "ASC") String sortDirection) {
         
         if (page != null && size != null) {
@@ -237,12 +385,24 @@ public class BookCopyController {
     }
     
     // Get BookCopies by condition
+    @Operation(
+            summary = "Get book copies by condition",
+            description = "Retrieves all book copies with a specific physical condition (e.g., NEW, GOOD, FAIR, POOR) with optional pagination"
+    )
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Book copies retrieved successfully")
+    })
     @GetMapping("/condition/{condition}")
     public ResponseEntity<?> getBookCopiesByCondition(
+            @Parameter(description = "Physical condition", required = true, example = "GOOD")
             @PathVariable String condition,
+            @Parameter(description = "Page number (0-indexed)", example = "0")
             @RequestParam(required = false) Integer page,
+            @Parameter(description = "Number of items per page", example = "10")
             @RequestParam(required = false) Integer size,
+            @Parameter(description = "Field to sort by", example = "barcode")
             @RequestParam(defaultValue = "barcode") String sortBy,
+            @Parameter(description = "Sort direction (ASC or DESC)", example = "ASC")
             @RequestParam(defaultValue = "ASC") String sortDirection) {
         
         if (page != null && size != null) {
@@ -263,13 +423,26 @@ public class BookCopyController {
     }
     
     // Get BookCopies by location and status
+    @Operation(
+            summary = "Get book copies by location and status",
+            description = "Retrieves book copies filtered by both location and availability status with optional pagination"
+    )
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Book copies retrieved successfully")
+    })
     @GetMapping("/location/{location}/status/{status}")
     public ResponseEntity<?> getBookCopiesByLocationAndStatus(
+            @Parameter(description = "Location/Shelf identifier", required = true, example = "A-101")
             @PathVariable String location,
+            @Parameter(description = "Book copy status", required = true, example = "AVAILABLE")
             @PathVariable BookCopyStatus status,
+            @Parameter(description = "Page number (0-indexed)", example = "0")
             @RequestParam(required = false) Integer page,
+            @Parameter(description = "Number of items per page", example = "10")
             @RequestParam(required = false) Integer size,
+            @Parameter(description = "Field to sort by", example = "barcode")
             @RequestParam(defaultValue = "barcode") String sortBy,
+            @Parameter(description = "Sort direction (ASC or DESC)", example = "ASC")
             @RequestParam(defaultValue = "ASC") String sortDirection) {
         
         if (page != null && size != null) {
@@ -290,22 +463,49 @@ public class BookCopyController {
     }
     
     // Count copies by book ID
+    @Operation(
+            summary = "Count book copies by book ID",
+            description = "Returns the total number of physical copies for a specific book"
+    )
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Count retrieved successfully")
+    })
     @GetMapping("/count/book/{bookId}")
-    public ResponseEntity<Long> countBookCopiesByBookId(@PathVariable Long bookId) {
+    public ResponseEntity<Long> countBookCopiesByBookId(
+            @Parameter(description = "Book ID", required = true, example = "1")
+            @PathVariable Long bookId) {
         long count = bookCopyService.countByBookId(bookId);
         return new ResponseEntity<>(count, HttpStatus.OK);
     }
     
     // Count copies by status
+    @Operation(
+            summary = "Count book copies by status",
+            description = "Returns the total number of book copies with a specific status"
+    )
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Count retrieved successfully")
+    })
     @GetMapping("/count/status/{status}")
-    public ResponseEntity<Long> countBookCopiesByStatus(@PathVariable BookCopyStatus status) {
+    public ResponseEntity<Long> countBookCopiesByStatus(
+            @Parameter(description = "Book copy status", required = true, example = "AVAILABLE")
+            @PathVariable BookCopyStatus status) {
         long count = bookCopyService.countByStatus(status);
         return new ResponseEntity<>(count, HttpStatus.OK);
     }
     
     // Count available copies by book ID
+    @Operation(
+            summary = "Count available copies by book ID",
+            description = "Returns the number of available (not borrowed) copies for a specific book"
+    )
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Count retrieved successfully")
+    })
     @GetMapping("/count/book/{bookId}/available")
-    public ResponseEntity<Long> countAvailableCopiesByBookId(@PathVariable Long bookId) {
+    public ResponseEntity<Long> countAvailableCopiesByBookId(
+            @Parameter(description = "Book ID", required = true, example = "1")
+            @PathVariable Long bookId) {
         long count = bookCopyService.countAvailableCopiesByBookId(bookId);
         return new ResponseEntity<>(count, HttpStatus.OK);
     }
