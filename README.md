@@ -80,13 +80,15 @@ A Spring Boot-based Library Management System that provides comprehensive functi
 
 ## 🛠️ Technology Stack
 
-- **Backend**: Spring Boot 3.5.6
+- **Backend**: Spring Boot 3.3.5
 - **Java Version**: 21
 - **Database**: PostgreSQL
 - **ORM**: Spring Data JPA with Hibernate
-- **Security**: Spring Security Crypto
-- **Build Tool**: Maven
+- **Security**: Spring Security Crypto (BCrypt password encryption)
+- **API Documentation**: Springdoc OpenAPI 2.3.0
+- **Build Tool**: Maven 3.11.0
 - **Lombok**: For reducing boilerplate code
+- **DevTools**: Spring Boot DevTools for hot reloading
 
 ## 📋 Prerequisites
 
@@ -155,6 +157,29 @@ The application will start on the default port `8080`. You can access it at:
 ```
 http://localhost:8080
 ```
+
+### 5. Access API Documentation
+The application includes interactive API documentation using Swagger UI (OpenAPI 3.0):
+
+**Swagger UI**: 
+```
+http://localhost:8080/swagger-ui.html
+```
+or
+```
+http://localhost:8080/swagger-ui/index.html
+```
+
+**OpenAPI JSON**: 
+```
+http://localhost:8080/v3/api-docs
+```
+
+The Swagger UI provides:
+- Interactive API documentation
+- Try-it-out functionality for all endpoints
+- Request/response schemas
+- Example values for all DTOs
 
 ## 📁 Project Structure
 
