@@ -1,6 +1,6 @@
 # Library Management System (LMS)
 
-A Spring Boot-based Library Management System that provides comprehensive functionality for managing library operations including users, authors, genres, publishers, and librarians.
+A streamlined Spring Boot-based Library Management System providing essential functionality for managing library operations with 81 RESTful API endpoints. The system includes complete CRUD operations with pagination, automated fine assessment for overdue returns, and integrated payment tracking.
 
 ## � Table of Contents
 
@@ -363,7 +363,11 @@ src/
 - **Key Features**:
   - Automatic 14-day due date calculation
   - Default status: BORROWED
-  - Support for overdue tracking
+  - **Automated fine assessment** on late returns
+  - Status automatically set based on return date:
+    - RETURNED: if returnDate <= dueDate
+    - OVERDUE: if returnDate > dueDate
+  - Return date validation (cannot be before borrow date)
 - **Relationships**:
   - Many-to-one with User
   - Many-to-one with BookCopy
@@ -375,9 +379,12 @@ src/
 - **Fields**: id, amount, assessedDate, status, reason
 - **Purpose**: Track fines for overdue books and other violations
 - **Key Features**:
+  - **Automatically created** when book returned after due date
+  - Fine calculation: overdue days × daily rate ($5.00 default)
   - BigDecimal precision for monetary amounts
   - Default status: PENDING
-  - Detailed reason tracking
+  - Detailed reason tracking with calculation details
+  - **Auto-updates associated payments** when marked as PAID
 - **Relationships**:
   - One-to-one with Borrowed
   - One-to-many with Payment
@@ -390,6 +397,7 @@ src/
   - Transaction ID tracking
   - Default status: PENDING
   - Support for partial payments
+  - **Automatically set to COMPLETED** when associated fine is paid
 - **Relationships**:
   - Many-to-one with Fine
 
@@ -412,8 +420,8 @@ The system uses several enumerations to maintain data consistency and provide cl
 
 #### BorrowStatus
 - **BORROWED**: Book is currently borrowed
-- **RETURNED**: Book has been returned
-- **OVERDUE**: Book is past its due date
+- **RETURNED**: Book has been returned on-time (on or before due date)
+- **OVERDUE**: Book was returned after its due date (automatically assessed fine)
 
 ### Financial Management Enums
 
@@ -1899,7 +1907,7 @@ The Borrowed API manages the complete borrowing workflow including checkout, ret
 
 **Example**: `POST /api/borrowed/1/return?returnDate=2025-12-05`
 
-**Response**: `200 OK`
+**Response (On-Time Return)**: `200 OK`
 ```json
 {
   "id": 1,
@@ -1915,10 +1923,39 @@ The Borrowed API manages the complete borrowing workflow including checkout, ret
 }
 ```
 
-**Notes**:
-- Updates borrow status to `RETURNED`
-- Automatically updates book copy status back to `AVAILABLE`
-- Validates that the book hasn't already been returned
+**Response (Late Return)**: `200 OK`
+```json
+{
+  "id": 1,
+  "borrowDate": "2025-11-26",
+  "dueDate": "2025-12-10",
+  "returnDate": "2025-12-15",
+  "status": "OVERDUE",
+  "user": { ... },
+  "bookCopy": {
+    "status": "AVAILABLE",
+    ...
+  }
+}
+```
+
+**Automated Business Logic**:
+- **On-Time Return** (returnDate <= dueDate):
+  - Status set to `RETURNED`
+  - Book copy set to `AVAILABLE`
+  - No fine created
+  
+- **Late Return** (returnDate > dueDate):
+  - Status set to `OVERDUE`
+  - Book copy set to `AVAILABLE`
+  - **Fine automatically created** with:
+    - Amount = overdue days \u00d7 $5.00 (daily rate)
+    - Status = `PENDING`
+    - Detailed reason with calculation
+    
+- **Validations**:
+  - Return date cannot be before borrow date
+  - Cannot return a book that's already been returned
 
 #### Filter and Search Endpoints
 
@@ -2092,12 +2129,14 @@ The Borrowed API manages the complete borrowing workflow including checkout, ret
 
 ### Fine Management API
 
-The Fine Management API handles all aspects of fines including automated assessment for overdue books, payment processing, and fine tracking.
+The Fine Management API handles all aspects of fines including **automated assessment for overdue returns**, payment processing, and fine tracking. Fines are automatically created when books are returned after their due date.
 
 #### Core CRUD Operations
 
 ##### 1. Create a Fine
 **Endpoint**: `POST /api/fines`
+
+**Note**: Manual fine creation is available, but most fines are **automatically created** when books are returned late via the `POST /api/borrowed/{id}/return` endpoint.
 
 **Request Body**:
 ```json
@@ -2246,10 +2285,13 @@ The Fine Management API handles all aspects of fines including automated assessm
 }
 ```
 
-**Notes**:
+**Automated Business Logic**:
 - Only `PENDING` fines can be paid
-- Status automatically updated to `PAID`
+- Fine status updated to `PAID`
+- **All associated Payment records automatically set to `COMPLETED`**
 - Throws exception if fine is already paid or waived
+
+**Use Case**: Mark fine as paid and update all related payment records
 
 ##### Waive a Fine
 **Endpoint**: `POST /api/fines/{id}/waive`
@@ -2307,7 +2349,9 @@ The Fine Management API handles all aspects of fines including automated assessm
 - Prevents duplicate fines for same borrowed record
 - Validates that book is actually overdue
 
-**Use Case**: Automatically assess fines when processing book returns
+**Important Note**: This endpoint is primarily for **manual corrections** or **administrative adjustments**. In normal workflow, fines are **automatically created** when books are returned late via `POST /api/borrowed/{id}/return` with a fixed rate of $5.00/day.
+
+**Use Case**: Manually assess fines for edge cases, or reassess with different daily rate
 
 #### Financial Calculations
 
