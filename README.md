@@ -28,6 +28,8 @@ A Spring Boot-based Library Management System that provides comprehensive functi
 - [Testing](#-testing)
 - [Building for Production](#-building-for-production)
 - [REST API Documentation](#-rest-api-documentation)
+  - [User Management API](#user-management-api)
+  - [Librarian Management API](#librarian-management-api)
   - [Book Management API](#book-management-api)
   - [Book Copy Management API](#book-copy-management-api)
   - [Borrowed (Borrowing System) API](#borrowed-borrowing-system-api)
@@ -61,6 +63,16 @@ A Spring Boot-based Library Management System that provides comprehensive functi
 - **Borrowing System**: Complete borrowing workflow with due dates and return tracking
 - **Fine Management**: Automated fine calculation, payment tracking, and overdue penalties
 - **Payment Processing**: Support for multiple payment methods and transaction tracking
+- **User Management**: Complete user registration, authentication, and profile management
+  - **RESTful API**: Full CRUD operations with advanced filtering
+  - **Pagination Support**: All endpoints support pagination and sorting
+  - **Status Management**: Activate, deactivate, and suspend user accounts
+  - **Password Management**: Secure password change with validation
+- **Librarian Management**: Staff and admin account management
+  - **RESTful API**: Complete CRUD operations with role management
+  - **Pagination Support**: All list endpoints support pagination and sorting
+  - **Role Management**: Promote to admin or demote to staff
+  - **Advanced Search**: Filter by role, status, name, and combined criteria
 - **Security**: Password encryption using BCrypt
 - **Database Integration**: PostgreSQL database with JPA/Hibernate
 - **DTO Pattern**: Clean separation between entity and presentation layers
@@ -158,8 +170,10 @@ src/
 │   │       │   ├── BorrowedController.java
 │   │       │   ├── FineController.java
 │   │       │   ├── GenreController.java
+│   │       │   ├── LibrarianController.java
 │   │       │   ├── PaymentController.java
-│   │       │   └── PublisherController.java
+│   │       │   ├── PublisherController.java
+│   │       │   └── UserController.java
 │   │       ├── dto/              # Data Transfer Objects
 │   │       │   ├── AuthorRequestDTO.java
 │   │       │   ├── AuthorResponseDTO.java
@@ -173,10 +187,14 @@ src/
 │   │       │   ├── FineResponseDTO.java
 │   │       │   ├── GenreRequestDTO.java
 │   │       │   ├── GenreResponseDTO.java
+│   │       │   ├── LibrarianRequestDTO.java
+│   │       │   ├── LibrarianResponseDTO.java
 │   │       │   ├── PaymentRequestDTO.java
 │   │       │   ├── PaymentResponseDTO.java
 │   │       │   ├── PublisherRequestDTO.java
 │   │       │   ├── PublisherResponseDTO.java
+│   │       │   ├── UserRequestDTO.java
+│   │       │   ├── UserResponseDTO.java
 │   │       │   ├── UserSummaryDTO.java
 │   │       │   └── ErrorResponse.java
 │   │       ├── entity/           # JPA entities
@@ -209,8 +227,10 @@ src/
 │   │       │   ├── BorrowedMapper.java
 │   │       │   ├── FineMapper.java
 │   │       │   ├── GenreMapper.java
+│   │       │   ├── LibrarianMapper.java
 │   │       │   ├── PaymentMapper.java
-│   │       │   └── PublisherMapper.java
+│   │       │   ├── PublisherMapper.java
+│   │       │   └── UserMapper.java
 │   │       ├── repository/       # Data repositories
 │   │       │   ├── AuthorRepository.java
 │   │       │   ├── BookCopyRepository.java
@@ -230,16 +250,20 @@ src/
 │   │       │   │   ├── BorrowedService.java
 │   │       │   │   ├── FineService.java
 │   │       │   │   ├── GenreService.java
+│   │       │   │   ├── LibrarianService.java
 │   │       │   │   ├── PaymentService.java
-│   │       │   │   └── PublisherService.java
+│   │       │   │   ├── PublisherService.java
+│   │       │   │   └── UserService.java
 │   │       │   ├── AuthorServiceImpl.java
 │   │       │   ├── BookServiceImpl.java
-│   │       │   ├── BookCopyImpl.java
-│   │       │   ├── BorrowedImpl.java
+│   │       │   ├── BookCopyServiceImpl.java
+│   │       │   ├── BorrowedServiceImpl.java
 │   │       │   ├── FineServiceImpl.java
 │   │       │   ├── GenreServiceImpl.java
+│   │       │   ├── LibrarianServiceImpl.java
 │   │       │   ├── PaymentServiceImpl.java
-│   │       │   └── PublisherServiceImpl.java
+│   │       │   ├── PublisherServiceImpl.java
+│   │       │   └── UserServiceImpl.java
 │   │       └── LmsApplication.java
 │   └── resources/
 │       ├── application.properties
@@ -273,7 +297,11 @@ src/
 - **Relationships**: One-to-many with Books
 
 #### Librarian Entity
-- **Fields**: Staff and admin role management
+- **Fields**: id, name, email, password, phoneNumber, address, role, hireDate, status
+- **Security**: Passwords are automatically encrypted using BCrypt
+- **Roles**: STAFF (default) and ADMIN
+- **Status**: Default status is ACTIVE
+- **Purpose**: Manage library staff accounts with role-based access control
 
 ### Book Management Entities
 
@@ -623,6 +651,655 @@ The Library Management System provides a comprehensive RESTful API for managing 
 ```
 http://localhost:8080/api
 ```
+
+### User Management API
+
+Complete user management system for library patrons with profile management, status control, and borrowing eligibility tracking.
+
+#### Core CRUD Operations
+
+##### 1. Create User
+**Endpoint**: `POST /api/users`
+
+**Request Body**:
+```json
+{
+  "name": "John Doe",
+  "email": "john.doe@example.com",
+  "password": "securePassword123",
+  "phoneNumber": "555-0123",
+  "address": "123 Main St, City, State",
+  "membershipDate": "2025-11-26",
+  "status": "ACTIVE"
+}
+```
+
+**Notes**:
+- `membershipDate` is optional and defaults to current date if not provided
+- `status` is optional and defaults to `ACTIVE` if not provided
+- Password is automatically encrypted using BCrypt
+- Email and phone number must be unique
+
+**Response**: `201 CREATED`
+```json
+{
+  "id": 1,
+  "name": "John Doe",
+  "email": "john.doe@example.com",
+  "phoneNumber": "555-0123",
+  "address": "123 Main St, City, State",
+  "membershipDate": "2025-11-26",
+  "status": "ACTIVE"
+}
+```
+
+##### 2. Get User by ID
+**Endpoint**: `GET /api/users/{id}`
+
+**Example**: `GET /api/users/1`
+
+**Response**: `200 OK` - Returns UserResponseDTO
+
+##### 3. Get All Users
+**Endpoint**: `GET /api/users`
+
+**Query Parameters** (all optional):
+- `page` - Page number (0-indexed)
+- `size` - Number of items per page
+- `sortBy` - Field to sort by (default: "name")
+- `sortDirection` - ASC or DESC (default: ASC)
+
+**Examples**:
+```bash
+# Get all users (list)
+GET /api/users
+
+# Get paginated users
+GET /api/users?page=0&size=10&sortBy=name&sortDirection=ASC
+```
+
+**Response (List)**: `200 OK` - Array of UserResponseDTOs
+
+**Response (Paginated)**: `200 OK` - Page object with users
+
+##### 4. Update User
+**Endpoint**: `PUT /api/users/{id}`
+
+**Request Body**: Same as Create User
+
+**Response**: `200 OK` - Returns updated UserResponseDTO
+
+##### 5. Delete User
+**Endpoint**: `DELETE /api/users/{id}`
+
+**Response**: `204 NO CONTENT`
+
+#### Search and Filter Endpoints
+
+##### Get User by Email
+**Endpoint**: `GET /api/users/email/{email}`
+
+**Example**: `GET /api/users/email/john.doe@example.com`
+
+**Response**: `200 OK` - Single user object
+
+**Use Case**: User authentication and profile lookup
+
+##### Get User by Phone Number
+**Endpoint**: `GET /api/users/phone/{phoneNumber}`
+
+**Example**: `GET /api/users/phone/555-0123`
+
+**Response**: `200 OK` - Single user object
+
+**Use Case**: Alternative user lookup method
+
+##### Filter Users by Status
+**Endpoint**: `GET /api/users/status/{status}`
+
+**Status Values**: `ACTIVE`, `INACTIVE`
+
+**Query Parameters**: `page`, `size`, `sortBy`, `sortDirection` (optional)
+
+**Example**: `GET /api/users/status/ACTIVE?page=0&size=20`
+
+**Response**: `200 OK` - List or Page of users with specified status
+
+**Use Case**: View all active or inactive users
+
+##### Search Users by Name
+**Endpoint**: `GET /api/users/search/name?name={keyword}`
+
+**Example**: `GET /api/users/search/name?name=John&page=0&size=10`
+
+**Response**: `200 OK` - List or Page of users matching the name (case-insensitive)
+
+**Use Case**: Quick user lookup by partial name
+
+##### Filter by Membership Date Range
+**Endpoint**: `GET /api/users/search/membership-date`
+
+**Query Parameters**:
+- `startDate` (required): Start date (format: `yyyy-MM-dd`)
+- `endDate` (required): End date (format: `yyyy-MM-dd`)
+- `page`, `size`, `sortBy`, `sortDirection` (optional)
+
+**Example**: `GET /api/users/search/membership-date?startDate=2025-01-01&endDate=2025-12-31`
+
+**Response**: `200 OK` - List or Page of users who joined within date range
+
+**Use Case**: Analyze user registrations by period
+
+##### Get Users with Overdue Books
+**Endpoint**: `GET /api/users/overdue-books`
+
+**Query Parameters**: `page`, `size`, `sortBy`, `sortDirection` (optional)
+
+**Example**: `GET /api/users/overdue-books?page=0&size=50`
+
+**Response**: `200 OK` - List or Page of users with overdue books
+
+**Use Case**: Identify users who need reminders or restrictions
+
+##### Get Users with Pending Fines
+**Endpoint**: `GET /api/users/pending-fines`
+
+**Query Parameters**: `page`, `size`, `sortBy`, `sortDirection` (optional)
+
+**Example**: `GET /api/users/pending-fines?page=0&size=50`
+
+**Response**: `200 OK` - List or Page of users with unpaid fines
+
+**Use Case**: Collections and account restrictions
+
+#### Account Status Management
+
+##### Activate User
+**Endpoint**: `POST /api/users/{id}/activate`
+
+**Example**: `POST /api/users/1/activate`
+
+**Response**: `200 OK`
+```json
+{
+  "id": 1,
+  "name": "John Doe",
+  "status": "ACTIVE",
+  ...
+}
+```
+
+**Use Case**: Restore inactive user account
+
+##### Deactivate User
+**Endpoint**: `POST /api/users/{id}/deactivate`
+
+**Example**: `POST /api/users/2/deactivate`
+
+**Response**: `200 OK` - Returns updated user with INACTIVE status
+
+**Use Case**: Temporarily disable user account
+
+##### Suspend User
+**Endpoint**: `POST /api/users/{id}/suspend`
+
+**Example**: `POST /api/users/3/suspend`
+
+**Response**: `200 OK` - Returns updated user with INACTIVE status
+
+**Notes**: Currently sets status to INACTIVE (suspension functionality)
+
+**Use Case**: Discipline action for policy violations
+
+#### Password Management
+
+##### Change Password
+**Endpoint**: `POST /api/users/{id}/change-password`
+
+**Query Parameters**:
+- `oldPassword` (required): Current password for verification
+- `newPassword` (required): New password (minimum 6 characters)
+
+**Example**: `POST /api/users/1/change-password?oldPassword=oldPass123&newPassword=newSecurePass456`
+
+**Response**: `200 OK`
+```json
+{
+  "message": "Password changed successfully"
+}
+```
+
+**Security Features**:
+- Verifies old password before allowing change
+- Validates new password length (minimum 6 characters)
+- Automatically encrypts new password using BCrypt
+
+#### Validation Endpoints
+
+##### Check if Email Exists
+**Endpoint**: `GET /api/users/exists/email/{email}`
+
+**Example**: `GET /api/users/exists/email/john.doe@example.com`
+
+**Response**: `200 OK`
+```json
+{
+  "exists": true
+}
+```
+
+**Use Case**: Email uniqueness validation during registration
+
+##### Check if Phone Number Exists
+**Endpoint**: `GET /api/users/exists/phone/{phoneNumber}`
+
+**Example**: `GET /api/users/exists/phone/555-0123`
+
+**Response**: `200 OK`
+```json
+{
+  "exists": false
+}
+```
+
+**Use Case**: Phone number uniqueness validation
+
+##### Count Users by Status
+**Endpoint**: `GET /api/users/count/status/{status}`
+
+**Example**: `GET /api/users/count/status/ACTIVE`
+
+**Response**: `200 OK`
+```json
+{
+  "count": 1250
+}
+```
+
+**Use Case**: Dashboard statistics, member reports
+
+##### Check if User Can Borrow
+**Endpoint**: `GET /api/users/{id}/can-borrow`
+
+**Example**: `GET /api/users/1/can-borrow`
+
+**Response**: `200 OK`
+```json
+{
+  "canBorrow": true
+}
+```
+
+**Business Rules Checked**:
+- User status is ACTIVE
+- User has no overdue books
+- User has no pending fines
+
+**Use Case**: Validate before processing book checkout
+
+#### Common Use Cases
+
+##### User Registration Workflow
+1. Validate email: `GET /api/users/exists/email/{email}`
+2. Validate phone: `GET /api/users/exists/phone/{phoneNumber}`
+3. Create user: `POST /api/users`
+4. Verify creation: `GET /api/users/{id}`
+
+##### User Dashboard
+1. Get user details: `GET /api/users/{id}`
+2. Check borrowing eligibility: `GET /api/users/{id}/can-borrow`
+3. View overdue items: Check via Borrowed API
+4. View pending fines: Check via Fine API
+
+##### Administrative Reports
+1. Count active members: `GET /api/users/count/status/ACTIVE`
+2. New members this month: `GET /api/users/search/membership-date?startDate=...`
+3. Users with issues: `GET /api/users/overdue-books`, `GET /api/users/pending-fines`
+
+##### Account Management
+1. View user profile: `GET /api/users/{id}`
+2. Update profile: `PUT /api/users/{id}`
+3. Change password: `POST /api/users/{id}/change-password?...`
+4. Deactivate account: `POST /api/users/{id}/deactivate`
+
+##### Collections Management
+1. Get users with pending fines: `GET /api/users/pending-fines?page=0&size=100`
+2. Get users with overdue books: `GET /api/users/overdue-books?page=0&size=100`
+3. Process individual user fines and returns
+
+---
+
+### Librarian Management API
+
+Complete staff management system with role-based access control, account management, and advanced filtering capabilities.
+
+#### Core CRUD Operations
+
+##### 1. Create Librarian
+**Endpoint**: `POST /api/librarians`
+
+**Request Body**:
+```json
+{
+  "name": "Jane Smith",
+  "email": "jane.smith@library.com",
+  "password": "securePassword123",
+  "phoneNumber": "555-0456",
+  "address": "456 Library Ave, City, State",
+  "role": "STAFF",
+  "hireDate": "2025-11-26",
+  "status": "ACTIVE"
+}
+```
+
+**Notes**:
+- `role` is optional and defaults to `STAFF` if not provided
+- `hireDate` is optional and defaults to current date if not provided
+- `status` is optional and defaults to `ACTIVE` if not provided
+- Password is automatically encrypted using BCrypt
+
+**Response**: `201 CREATED`
+```json
+{
+  "id": 1,
+  "name": "Jane Smith",
+  "email": "jane.smith@library.com",
+  "phoneNumber": "555-0456",
+  "address": "456 Library Ave, City, State",
+  "role": "STAFF",
+  "hireDate": "2025-11-26",
+  "status": "ACTIVE"
+}
+```
+
+##### 2. Get Librarian by ID
+**Endpoint**: `GET /api/librarians/{id}`
+
+**Example**: `GET /api/librarians/1`
+
+**Response**: `200 OK` - Returns LibrarianResponseDTO
+
+##### 3. Get All Librarians
+**Endpoint**: `GET /api/librarians`
+
+**Query Parameters** (all optional):
+- `page` - Page number (0-indexed)
+- `size` - Number of items per page
+- `sortBy` - Field to sort by (default: "name")
+- `sortDirection` - ASC or DESC (default: ASC)
+
+**Examples**:
+```bash
+# Get all librarians (list)
+GET /api/librarians
+
+# Get paginated librarians
+GET /api/librarians?page=0&size=10&sortBy=name&sortDirection=ASC
+```
+
+**Response (List)**: `200 OK` - Array of LibrarianResponseDTOs
+
+**Response (Paginated)**: `200 OK` - Page object with librarians
+
+##### 4. Update Librarian
+**Endpoint**: `PUT /api/librarians/{id}`
+
+**Request Body**: Same as Create Librarian
+
+**Response**: `200 OK` - Returns updated LibrarianResponseDTO
+
+##### 5. Delete Librarian
+**Endpoint**: `DELETE /api/librarians/{id}`
+
+**Response**: `204 NO CONTENT`
+
+#### Search and Filter Endpoints
+
+##### Get Librarian by Email
+**Endpoint**: `GET /api/librarians/email/{email}`
+
+**Example**: `GET /api/librarians/email/jane.smith@library.com`
+
+**Response**: `200 OK` - Single librarian object
+
+**Use Case**: Authentication and profile lookup
+
+##### Filter Librarians by Role
+**Endpoint**: `GET /api/librarians/role/{role}`
+
+**Role Values**: `STAFF`, `ADMIN`
+
+**Query Parameters**: `page`, `size`, `sortBy`, `sortDirection` (optional)
+
+**Example**: `GET /api/librarians/role/ADMIN?page=0&size=10`
+
+**Response**: `200 OK` - List or Page of librarians with specified role
+
+**Use Case**: View all administrators or staff members
+
+##### Filter Librarians by Status
+**Endpoint**: `GET /api/librarians/status/{status}`
+
+**Status Values**: `ACTIVE`, `INACTIVE`
+
+**Example**: `GET /api/librarians/status/ACTIVE?page=0&size=20`
+
+**Response**: `200 OK` - List or Page of librarians with specified status
+
+**Use Case**: View active or inactive staff members
+
+##### Search Librarians by Name
+**Endpoint**: `GET /api/librarians/search/name?name={keyword}`
+
+**Example**: `GET /api/librarians/search/name?name=Jane&page=0&size=10`
+
+**Response**: `200 OK` - List or Page of librarians matching the name (case-insensitive)
+
+**Use Case**: Quick staff member lookup
+
+##### Filter by Status and Role
+**Endpoint**: `GET /api/librarians/search/status-role?status={status}&role={role}`
+
+**Example**: `GET /api/librarians/search/status-role?status=ACTIVE&role=ADMIN`
+
+**Response**: `200 OK` - List or Page of librarians matching both criteria
+
+**Use Case**: Find all active administrators
+
+#### Account Status Management
+
+##### Activate Librarian
+**Endpoint**: `POST /api/librarians/{id}/activate`
+
+**Example**: `POST /api/librarians/1/activate`
+
+**Response**: `200 OK`
+```json
+{
+  "id": 1,
+  "name": "Jane Smith",
+  "status": "ACTIVE",
+  ...
+}
+```
+
+**Use Case**: Restore inactive librarian account
+
+##### Deactivate Librarian
+**Endpoint**: `POST /api/librarians/{id}/deactivate`
+
+**Example**: `POST /api/librarians/2/deactivate`
+
+**Response**: `200 OK` - Returns updated librarian with INACTIVE status
+
+**Use Case**: Temporarily disable librarian account
+
+##### Suspend Librarian
+**Endpoint**: `POST /api/librarians/{id}/suspend`
+
+**Example**: `POST /api/librarians/3/suspend`
+
+**Response**: `200 OK` - Returns updated librarian with INACTIVE status
+
+**Notes**: Currently sets status to INACTIVE (suspension functionality)
+
+#### Password Management
+
+##### Change Password
+**Endpoint**: `POST /api/librarians/{id}/change-password`
+
+**Query Parameters**:
+- `oldPassword` (required): Current password for verification
+- `newPassword` (required): New password (minimum 6 characters)
+
+**Example**: `POST /api/librarians/1/change-password?oldPassword=oldPass123&newPassword=newSecurePass456`
+
+**Response**: `200 OK`
+```json
+{
+  "message": "Password changed successfully"
+}
+```
+
+**Security Features**:
+- Verifies old password before allowing change
+- Validates new password length (minimum 6 characters)
+- Automatically encrypts new password using BCrypt
+
+#### Role Management
+
+##### Promote to Admin
+**Endpoint**: `POST /api/librarians/{id}/promote`
+
+**Example**: `POST /api/librarians/5/promote`
+
+**Response**: `200 OK`
+```json
+{
+  "id": 5,
+  "name": "Jane Smith",
+  "role": "ADMIN",
+  ...
+}
+```
+
+**Validation**:
+- Throws exception if librarian is already an admin
+- Only STAFF can be promoted to ADMIN
+
+**Use Case**: Grant administrative privileges to staff member
+
+##### Demote to Staff
+**Endpoint**: `POST /api/librarians/{id}/demote`
+
+**Example**: `POST /api/librarians/5/demote`
+
+**Response**: `200 OK`
+```json
+{
+  "id": 5,
+  "name": "Jane Smith",
+  "role": "STAFF",
+  ...
+}
+```
+
+**Validation**:
+- Throws exception if librarian is already a staff member
+- Only ADMIN can be demoted to STAFF
+
+**Use Case**: Remove administrative privileges
+
+#### Validation Endpoints
+
+##### Check if Email Exists
+**Endpoint**: `GET /api/librarians/exists/email/{email}`
+
+**Example**: `GET /api/librarians/exists/email/jane.smith@library.com`
+
+**Response**: `200 OK`
+```json
+{
+  "exists": true
+}
+```
+
+**Use Case**: Email uniqueness validation during registration
+
+##### Check if Phone Number Exists
+**Endpoint**: `GET /api/librarians/exists/phone/{phoneNumber}`
+
+**Example**: `GET /api/librarians/exists/phone/555-0456`
+
+**Response**: `200 OK`
+```json
+{
+  "exists": false
+}
+```
+
+**Use Case**: Phone number uniqueness validation
+
+##### Count Librarians by Role
+**Endpoint**: `GET /api/librarians/count/role/{role}`
+
+**Example**: `GET /api/librarians/count/role/ADMIN`
+
+**Response**: `200 OK`
+```json
+{
+  "count": 3
+}
+```
+
+**Use Case**: Dashboard statistics, staffing reports
+
+##### Count Librarians by Status
+**Endpoint**: `GET /api/librarians/count/status/{status}`
+
+**Example**: `GET /api/librarians/count/status/ACTIVE`
+
+**Response**: `200 OK`
+```json
+{
+  "count": 15
+}
+```
+
+**Use Case**: Active staff count for reporting
+
+#### Common Use Cases
+
+##### Staff Registration Workflow
+1. Validate email: `GET /api/librarians/exists/email/{email}`
+2. Validate phone: `GET /api/librarians/exists/phone/{phoneNumber}`
+3. Create librarian: `POST /api/librarians`
+4. Verify creation: `GET /api/librarians/{id}`
+
+##### Administrative Dashboard
+1. Count active staff: `GET /api/librarians/count/status/ACTIVE`
+2. Count admins: `GET /api/librarians/count/role/ADMIN`
+3. List all admins: `GET /api/librarians/role/ADMIN`
+4. Search staff: `GET /api/librarians/search/name?name=...`
+
+##### Staff Management
+1. View all staff: `GET /api/librarians?page=0&size=20`
+2. Filter active staff: `GET /api/librarians/status/ACTIVE`
+3. Promote staff to admin: `POST /api/librarians/{id}/promote`
+4. Deactivate staff: `POST /api/librarians/{id}/deactivate`
+
+##### Password Reset
+1. Verify librarian identity
+2. Change password: `POST /api/librarians/{id}/change-password?oldPassword=...&newPassword=...`
+3. Confirm success
+
+##### Role Transition
+1. Get librarian details: `GET /api/librarians/{id}`
+2. Promote to admin: `POST /api/librarians/{id}/promote`
+3. Or demote to staff: `POST /api/librarians/{id}/demote`
+4. Verify role change: `GET /api/librarians/{id}`
+
+---
 
 ### Book Management API
 

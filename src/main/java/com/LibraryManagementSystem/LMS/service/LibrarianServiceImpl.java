@@ -1,0 +1,269 @@
+package com.LibraryManagementSystem.LMS.service;
+
+import com.LibraryManagementSystem.LMS.entity.Librarian;
+import com.LibraryManagementSystem.LMS.enums.Role;
+import com.LibraryManagementSystem.LMS.enums.Status;
+import com.LibraryManagementSystem.LMS.exception.ResourceNotFoundException;
+import com.LibraryManagementSystem.LMS.repository.LibrarianRepository;
+import com.LibraryManagementSystem.LMS.service.interfaces.LibrarianService;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.util.List;
+
+@Service
+@Transactional
+public class LibrarianServiceImpl implements LibrarianService {
+    
+    private final LibrarianRepository librarianRepository;
+    private static final PasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
+
+    public LibrarianServiceImpl(LibrarianRepository librarianRepository) {
+        this.librarianRepository = librarianRepository;
+    }
+    
+    // Core CRUD methods
+    
+    @Override
+    public Librarian create(Librarian librarian) {
+        // Validate email uniqueness
+        if (librarian.getEmail() != null && librarianRepository.existsByEmail(librarian.getEmail())) {
+            throw new IllegalStateException("Librarian with email " + librarian.getEmail() + " already exists");
+        }
+        
+        // Validate phone number uniqueness
+        if (librarian.getPhoneNumber() != null && librarianRepository.existsByPhoneNumber(librarian.getPhoneNumber())) {
+            throw new IllegalStateException("Librarian with phone number " + librarian.getPhoneNumber() + " already exists");
+        }
+        
+        return librarianRepository.save(librarian);
+    }
+    
+    @Override
+    @Transactional(readOnly = true)
+    public Librarian getById(Long id) {
+        return librarianRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Librarian", "id", id));
+    }
+    
+    @Override
+    @Transactional(readOnly = true)
+    public List<Librarian> getAll() {
+        return librarianRepository.findAll();
+    }
+    
+    @Override
+    @Transactional(readOnly = true)
+    public Page<Librarian> getAllPaginated(Pageable pageable) {
+        return librarianRepository.findAll(pageable);
+    }
+    
+    @Override
+    public Librarian update(Long id, Librarian librarian) {
+        Librarian existingLibrarian = librarianRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Librarian", "id", id));
+        
+        // Validate email uniqueness if changed
+        if (librarian.getEmail() != null && !librarian.getEmail().equals(existingLibrarian.getEmail())) {
+            if (librarianRepository.existsByEmail(librarian.getEmail())) {
+                throw new IllegalStateException("Librarian with email " + librarian.getEmail() + " already exists");
+            }
+        }
+        
+        // Validate phone number uniqueness if changed
+        if (librarian.getPhoneNumber() != null && !librarian.getPhoneNumber().equals(existingLibrarian.getPhoneNumber())) {
+            if (librarianRepository.existsByPhoneNumber(librarian.getPhoneNumber())) {
+                throw new IllegalStateException("Librarian with phone number " + librarian.getPhoneNumber() + " already exists");
+            }
+        }
+        
+        existingLibrarian.setName(librarian.getName());
+        existingLibrarian.setEmail(librarian.getEmail());
+        existingLibrarian.setPassword(librarian.getPassword());
+        existingLibrarian.setPhoneNumber(librarian.getPhoneNumber());
+        existingLibrarian.setAddress(librarian.getAddress());
+        existingLibrarian.setRole(librarian.getRole());
+        existingLibrarian.setHireDate(librarian.getHireDate());
+        existingLibrarian.setStatus(librarian.getStatus());
+        
+        return librarianRepository.save(existingLibrarian);
+    }
+    
+    @Override
+    public void delete(Long id) {
+        Librarian librarian = librarianRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Librarian", "id", id));
+        librarianRepository.delete(librarian);
+    }
+    
+    // Find librarian by email
+    
+    @Override
+    @Transactional(readOnly = true)
+    public Librarian findByEmail(String email) {
+        return librarianRepository.findByEmail(email)
+                .orElseThrow(() -> new ResourceNotFoundException("Librarian", "email", email));
+    }
+    
+    // Find librarians by role
+    
+    @Override
+    @Transactional(readOnly = true)
+    public List<Librarian> findByRole(Role role) {
+        return librarianRepository.findByRole(role);
+    }
+    
+    @Override
+    @Transactional(readOnly = true)
+    public Page<Librarian> findByRole(Role role, Pageable pageable) {
+        return librarianRepository.findByRole(role, pageable);
+    }
+    
+    // Find librarians by status
+    
+    @Override
+    @Transactional(readOnly = true)
+    public List<Librarian> findByStatus(Status status) {
+        return librarianRepository.findByStatus(status);
+    }
+    
+    @Override
+    @Transactional(readOnly = true)
+    public Page<Librarian> findByStatus(Status status, Pageable pageable) {
+        return librarianRepository.findByStatus(status, pageable);
+    }
+    
+    // Find librarians by name
+    
+    @Override
+    @Transactional(readOnly = true)
+    public List<Librarian> findByNameContainingIgnoreCase(String name) {
+        return librarianRepository.findByNameContainingIgnoreCase(name);
+    }
+    
+    @Override
+    @Transactional(readOnly = true)
+    public Page<Librarian> findByNameContainingIgnoreCase(String name, Pageable pageable) {
+        return librarianRepository.findByNameContainingIgnoreCase(name, pageable);
+    }
+    
+    // Find librarians by status and role
+    
+    @Override
+    @Transactional(readOnly = true)
+    public List<Librarian> findByStatusAndRole(Status status, Role role) {
+        return librarianRepository.findByStatusAndRole(status, role);
+    }
+    
+    @Override
+    @Transactional(readOnly = true)
+    public Page<Librarian> findByStatusAndRole(Status status, Role role, Pageable pageable) {
+        return librarianRepository.findByStatusAndRole(status, role, pageable);
+    }
+    
+    // Business logic methods
+    
+    @Override
+    public Librarian activateLibrarian(Long librarianId) {
+        Librarian librarian = librarianRepository.findById(librarianId)
+                .orElseThrow(() -> new ResourceNotFoundException("Librarian", "id", librarianId));
+        
+        librarian.setStatus(Status.ACTIVE);
+        return librarianRepository.save(librarian);
+    }
+    
+    @Override
+    public Librarian deactivateLibrarian(Long librarianId) {
+        Librarian librarian = librarianRepository.findById(librarianId)
+                .orElseThrow(() -> new ResourceNotFoundException("Librarian", "id", librarianId));
+        
+        librarian.setStatus(Status.INACTIVE);
+        return librarianRepository.save(librarian);
+    }
+    
+    @Override
+    public Librarian suspendLibrarian(Long librarianId) {
+        Librarian librarian = librarianRepository.findById(librarianId)
+                .orElseThrow(() -> new ResourceNotFoundException("Librarian", "id", librarianId));
+        
+        // Set to INACTIVE as there's no SUSPENDED status in the enum
+        librarian.setStatus(Status.INACTIVE);
+        return librarianRepository.save(librarian);
+    }
+    
+    @Override
+    public Librarian changePassword(Long librarianId, String oldPassword, String newPassword) {
+        Librarian librarian = librarianRepository.findById(librarianId)
+                .orElseThrow(() -> new ResourceNotFoundException("Librarian", "id", librarianId));
+        
+        // Verify old password
+        if (!passwordEncoder.matches(oldPassword, librarian.getPassword())) {
+            throw new IllegalArgumentException("Old password is incorrect");
+        }
+        
+        // Validate new password
+        if (newPassword == null || newPassword.length() < 6) {
+            throw new IllegalArgumentException("New password must be at least 6 characters long");
+        }
+        
+        // Set new password (will be encrypted by @PrePersist/@PreUpdate)
+        librarian.setPassword(newPassword);
+        return librarianRepository.save(librarian);
+    }
+    
+    @Override
+    public Librarian promoteToAdmin(Long librarianId) {
+        Librarian librarian = librarianRepository.findById(librarianId)
+                .orElseThrow(() -> new ResourceNotFoundException("Librarian", "id", librarianId));
+        
+        if (librarian.getRole() == Role.ADMIN) {
+            throw new IllegalStateException("Librarian is already an admin");
+        }
+        
+        librarian.setRole(Role.ADMIN);
+        return librarianRepository.save(librarian);
+    }
+    
+    @Override
+    public Librarian demoteToStaff(Long librarianId) {
+        Librarian librarian = librarianRepository.findById(librarianId)
+                .orElseThrow(() -> new ResourceNotFoundException("Librarian", "id", librarianId));
+        
+        if (librarian.getRole() == Role.STAFF) {
+            throw new IllegalStateException("Librarian is already a staff member");
+        }
+        
+        librarian.setRole(Role.STAFF);
+        return librarianRepository.save(librarian);
+    }
+    
+    // Validation methods
+    
+    @Override
+    @Transactional(readOnly = true)
+    public boolean existsByEmail(String email) {
+        return librarianRepository.existsByEmail(email);
+    }
+    
+    @Override
+    @Transactional(readOnly = true)
+    public boolean existsByPhoneNumber(String phoneNumber) {
+        return librarianRepository.existsByPhoneNumber(phoneNumber);
+    }
+    
+    @Override
+    @Transactional(readOnly = true)
+    public long countByRole(Role role) {
+        return librarianRepository.countByRole(role);
+    }
+    
+    @Override
+    @Transactional(readOnly = true)
+    public long countByStatus(Status status) {
+        return librarianRepository.countByStatus(status);
+    }
+}
