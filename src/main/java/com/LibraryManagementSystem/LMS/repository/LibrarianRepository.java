@@ -31,8 +31,4 @@ public interface LibrarianRepository extends JpaRepository<Librarian, Long> {
     boolean existsByEmail(String email);
     
     boolean existsByPhoneNumber(String phoneNumber);
-    
-    long countByRole(Role role);
-    
-    long countByStatus(Status status);
 }

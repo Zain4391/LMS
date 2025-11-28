@@ -101,12 +101,6 @@ public class BookCopyImpl implements BookCopyService {
                 .orElseThrow(() -> new ResourceNotFoundException("BookCopy", "barcode", barcode));
     }
     
-    @Override
-    @Transactional(readOnly = true)
-    public boolean existsByBarcode(String barcode) {
-        return bookCopyRepository.existsByBarcode(barcode);
-    }
-    
     // Find by Book relationship
     
     @Override
@@ -133,95 +127,5 @@ public class BookCopyImpl implements BookCopyService {
     @Transactional(readOnly = true)
     public Page<BookCopy> findByStatus(BookCopyStatus status, Pageable pageable) {
         return bookCopyRepository.findByStatus(status, pageable);
-    }
-    
-    // Find by Book and Status
-    
-    @Override
-    @Transactional(readOnly = true)
-    public List<BookCopy> findByBookIdAndStatus(Long bookId, BookCopyStatus status) {
-        return bookCopyRepository.findByBookIdAndStatus(bookId, status);
-    }
-    
-    @Override
-    @Transactional(readOnly = true)
-    public Page<BookCopy> findByBookIdAndStatus(Long bookId, BookCopyStatus status, Pageable pageable) {
-        return bookCopyRepository.findByBookIdAndStatus(bookId, status, pageable);
-    }
-    
-    // Find available copies
-    
-    @Override
-    @Transactional(readOnly = true)
-    public List<BookCopy> findAvailableCopiesByBookId(Long bookId) {
-        return bookCopyRepository.findAvailableCopiesByBookId(bookId);
-    }
-    
-    @Override
-    @Transactional(readOnly = true)
-    public Page<BookCopy> findAvailableCopiesByBookId(Long bookId, Pageable pageable) {
-        return bookCopyRepository.findAvailableCopiesByBookId(bookId, pageable);
-    }
-    
-    // Find by location
-    
-    @Override
-    @Transactional(readOnly = true)
-    public List<BookCopy> findByLocation(String location) {
-        return bookCopyRepository.findByLocation(location);
-    }
-    
-    @Override
-    @Transactional(readOnly = true)
-    public Page<BookCopy> findByLocation(String location, Pageable pageable) {
-        return bookCopyRepository.findByLocation(location, pageable);
-    }
-    
-    // Find by condition
-    
-    @Override
-    @Transactional(readOnly = true)
-    public List<BookCopy> findByCondition(String condition) {
-        return bookCopyRepository.findByCondition(condition);
-    }
-    
-    @Override
-    @Transactional(readOnly = true)
-    public Page<BookCopy> findByCondition(String condition, Pageable pageable) {
-        return bookCopyRepository.findByCondition(condition, pageable);
-    }
-    
-    // Find by location and status
-    
-    @Override
-    @Transactional(readOnly = true)
-    public List<BookCopy> findByLocationAndStatus(String location, BookCopyStatus status) {
-        return bookCopyRepository.findByLocationAndStatus(location, status);
-    }
-    
-    @Override
-    @Transactional(readOnly = true)
-    public Page<BookCopy> findByLocationAndStatus(String location, BookCopyStatus status, Pageable pageable) {
-        return bookCopyRepository.findByLocationAndStatus(location, status, pageable);
-    }
-    
-    // Count methods
-    
-    @Override
-    @Transactional(readOnly = true)
-    public long countByBookId(Long bookId) {
-        return bookCopyRepository.countByBookId(bookId);
-    }
-    
-    @Override
-    @Transactional(readOnly = true)
-    public long countByStatus(BookCopyStatus status) {
-        return bookCopyRepository.countByStatus(status);
-    }
-    
-    @Override
-    @Transactional(readOnly = true)
-    public long countAvailableCopiesByBookId(Long bookId) {
-        return bookCopyRepository.countAvailableCopiesByBookId(bookId);
     }
 }

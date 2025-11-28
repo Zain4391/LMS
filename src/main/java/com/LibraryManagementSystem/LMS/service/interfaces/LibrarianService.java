@@ -36,35 +36,6 @@ public interface LibrarianService {
     
     Page<Librarian> findByStatus(Status status, Pageable pageable);
     
-    // Find librarians by name
-    List<Librarian> findByNameContainingIgnoreCase(String name);
-    
-    Page<Librarian> findByNameContainingIgnoreCase(String name, Pageable pageable);
-    
-    // Find librarians by status and role
-    List<Librarian> findByStatusAndRole(Status status, Role role);
-    
-    Page<Librarian> findByStatusAndRole(Status status, Role role, Pageable pageable);
-    
     // Business logic methods
-    Librarian activateLibrarian(Long librarianId);
-    
-    Librarian deactivateLibrarian(Long librarianId);
-    
-    Librarian suspendLibrarian(Long librarianId);
-    
     Librarian changePassword(Long librarianId, String oldPassword, String newPassword);
-    
-    Librarian promoteToAdmin(Long librarianId);
-    
-    Librarian demoteToStaff(Long librarianId);
-    
-    // Validation methods
-    boolean existsByEmail(String email);
-    
-    boolean existsByPhoneNumber(String phoneNumber);
-    
-    long countByRole(Role role);
-    
-    long countByStatus(Status status);
 }

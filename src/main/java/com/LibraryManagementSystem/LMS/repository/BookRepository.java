@@ -36,23 +36,6 @@ public interface BookRepository extends JpaRepository<Book, Long> {
     @Query("SELECT b FROM Book b JOIN b.authors a WHERE LOWER(a.name) LIKE LOWER(CONCAT('%', :authorName, '%'))")
     Page<Book> findByAuthorName(@Param("authorName") String authorName, Pageable pageable);
     
-    @Query("SELECT b FROM Book b JOIN b.genres g WHERE LOWER(g.name) = LOWER(:genreName)")
-    List<Book> findByGenreName(@Param("genreName") String genreName);
-    
-    @Query("SELECT b FROM Book b JOIN b.genres g WHERE LOWER(g.name) = LOWER(:genreName)")
-    Page<Book> findByGenreName(@Param("genreName") String genreName, Pageable pageable);
-    
-    @Query("SELECT DISTINCT b FROM Book b LEFT JOIN b.authors a WHERE " +
-           "LOWER(b.title) LIKE LOWER(CONCAT('%', :keyword, '%')) OR " +
-           "LOWER(a.name) LIKE LOWER(CONCAT('%', :keyword, '%'))")
-    List<Book> searchBooks(@Param("keyword") String keyword);
-    
-    @Query("SELECT DISTINCT b FROM Book b LEFT JOIN b.authors a WHERE " +
-           "LOWER(b.title) LIKE LOWER(CONCAT('%', :keyword, '%')) OR " +
-           "LOWER(a.name) LIKE LOWER(CONCAT('%', :keyword, '%'))")
-    Page<Book> searchBooks(@Param("keyword") String keyword, Pageable pageable);
-    
     boolean existsByIsbn(String isbn);
     
-    long countByStatus(BookStatus status);
 }

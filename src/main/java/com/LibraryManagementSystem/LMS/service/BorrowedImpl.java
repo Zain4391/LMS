@@ -2,11 +2,14 @@ package com.LibraryManagementSystem.LMS.service;
 
 import com.LibraryManagementSystem.LMS.entity.Borrowed;
 import com.LibraryManagementSystem.LMS.entity.BookCopy;
+import com.LibraryManagementSystem.LMS.entity.Fine;
 import com.LibraryManagementSystem.LMS.enums.BorrowStatus;
 import com.LibraryManagementSystem.LMS.enums.BookCopyStatus;
+import com.LibraryManagementSystem.LMS.enums.FineStatus;
 import com.LibraryManagementSystem.LMS.exception.ResourceNotFoundException;
 import com.LibraryManagementSystem.LMS.repository.BorrowedRepository;
 import com.LibraryManagementSystem.LMS.repository.BookCopyRepository;
+import com.LibraryManagementSystem.LMS.repository.FineRepository;
 import com.LibraryManagementSystem.LMS.repository.UserRepository;
 import com.LibraryManagementSystem.LMS.service.interfaces.BorrowedService;
 import org.springframework.data.domain.Page;
@@ -14,7 +17,9 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
 
 @Service
@@ -24,13 +29,19 @@ public class BorrowedImpl implements BorrowedService {
     private final BorrowedRepository borrowedRepository;
     private final BookCopyRepository bookCopyRepository;
     private final UserRepository userRepository;
+    private final FineRepository fineRepository;
+    
+    // Daily fine rate for overdue books (configurable)
+    private static final BigDecimal DAILY_FINE_RATE = new BigDecimal("5.00");
     
     public BorrowedImpl(BorrowedRepository borrowedRepository, 
                         BookCopyRepository bookCopyRepository,
-                        UserRepository userRepository) {
+                        UserRepository userRepository,
+                        FineRepository fineRepository) {
         this.borrowedRepository = borrowedRepository;
         this.bookCopyRepository = bookCopyRepository;
         this.userRepository = userRepository;
+        this.fineRepository = fineRepository;
     }
     
     // Core CRUD methods
@@ -117,20 +128,6 @@ public class BorrowedImpl implements BorrowedService {
         return borrowedRepository.findByUserId(userId, pageable);
     }
     
-    // Find by BookCopy
-    
-    @Override
-    @Transactional(readOnly = true)
-    public List<Borrowed> findByBookCopyId(Long bookCopyId) {
-        return borrowedRepository.findByBookCopyId(bookCopyId);
-    }
-    
-    @Override
-    @Transactional(readOnly = true)
-    public Page<Borrowed> findByBookCopyId(Long bookCopyId, Pageable pageable) {
-        return borrowedRepository.findByBookCopyId(bookCopyId, pageable);
-    }
-    
     // Find by Status
     
     @Override
@@ -143,34 +140,6 @@ public class BorrowedImpl implements BorrowedService {
     @Transactional(readOnly = true)
     public Page<Borrowed> findByStatus(BorrowStatus status, Pageable pageable) {
         return borrowedRepository.findByStatus(status, pageable);
-    }
-    
-    // Find by User and Status
-    
-    @Override
-    @Transactional(readOnly = true)
-    public List<Borrowed> findByUserIdAndStatus(Long userId, BorrowStatus status) {
-        return borrowedRepository.findByUserIdAndStatus(userId, status);
-    }
-    
-    @Override
-    @Transactional(readOnly = true)
-    public Page<Borrowed> findByUserIdAndStatus(Long userId, BorrowStatus status, Pageable pageable) {
-        return borrowedRepository.findByUserIdAndStatus(userId, status, pageable);
-    }
-    
-    // Find active borrows
-    
-    @Override
-    @Transactional(readOnly = true)
-    public List<Borrowed> findActiveBorrowsByUserId(Long userId) {
-        return borrowedRepository.findActiveBorrowsByUserId(userId);
-    }
-    
-    @Override
-    @Transactional(readOnly = true)
-    public Page<Borrowed> findActiveBorrowsByUserId(Long userId, Pageable pageable) {
-        return borrowedRepository.findActiveBorrowsByUserId(userId, pageable);
     }
     
     // Find overdue borrows
@@ -187,66 +156,6 @@ public class BorrowedImpl implements BorrowedService {
         return borrowedRepository.findOverdueRecords(LocalDate.now(), pageable);
     }
     
-    @Override
-    @Transactional(readOnly = true)
-    public List<Borrowed> findOverdueBorrowsByUserId(Long userId) {
-        return borrowedRepository.findOverdueRecordsByUserId(userId, LocalDate.now());
-    }
-    
-    @Override
-    @Transactional(readOnly = true)
-    public Page<Borrowed> findOverdueBorrowsByUserId(Long userId, Pageable pageable) {
-        return borrowedRepository.findOverdueRecordsByUserId(userId, LocalDate.now(), pageable);
-    }
-    
-    // Find by date ranges
-    
-    @Override
-    @Transactional(readOnly = true)
-    public List<Borrowed> findByBorrowDateBetween(LocalDate startDate, LocalDate endDate) {
-        return borrowedRepository.findByBorrowDateBetween(startDate, endDate);
-    }
-    
-    @Override
-    @Transactional(readOnly = true)
-    public Page<Borrowed> findByBorrowDateBetween(LocalDate startDate, LocalDate endDate, Pageable pageable) {
-        return borrowedRepository.findByBorrowDateBetween(startDate, endDate, pageable);
-    }
-    
-    @Override
-    @Transactional(readOnly = true)
-    public List<Borrowed> findByDueDateBetween(LocalDate startDate, LocalDate endDate) {
-        return borrowedRepository.findRecordsDueSoon(startDate, endDate);
-    }
-    
-    @Override
-    @Transactional(readOnly = true)
-    public Page<Borrowed> findByDueDateBetween(LocalDate startDate, LocalDate endDate, Pageable pageable) {
-        return borrowedRepository.findRecordsDueSoon(startDate, endDate, pageable);
-    }
-    
-    @Override
-    @Transactional(readOnly = true)
-    public List<Borrowed> findByReturnDateBetween(LocalDate startDate, LocalDate endDate) {
-        // Using native query approach since specific method not in repository
-        return borrowedRepository.findAll().stream()
-                .filter(b -> b.getReturnDate() != null && 
-                            !b.getReturnDate().isBefore(startDate) && 
-                            !b.getReturnDate().isAfter(endDate))
-                .toList();
-    }
-    
-    @Override
-    @Transactional(readOnly = true)
-    public Page<Borrowed> findByReturnDateBetween(LocalDate startDate, LocalDate endDate, Pageable pageable) {
-        // For paginated version, use repository findAll and filter
-        return borrowedRepository.findAll(pageable)
-                .map(b -> b.getReturnDate() != null && 
-                         !b.getReturnDate().isBefore(startDate) && 
-                         !b.getReturnDate().isAfter(endDate) ? b : null)
-                .map(b -> b);
-    }
-    
     // Business logic methods
     
     @Override
@@ -255,13 +164,37 @@ public class BorrowedImpl implements BorrowedService {
                 .orElseThrow(() -> new ResourceNotFoundException("Borrowed", "id", borrowedId));
         
         // Validate not already returned
-        if (borrowed.getStatus() == BorrowStatus.RETURNED) {
+        if (borrowed.getStatus() == BorrowStatus.RETURNED || borrowed.getStatus() == BorrowStatus.OVERDUE) {
             throw new IllegalStateException("Book has already been returned");
         }
         
-        // Update borrowed record
+        if (returnDate.isBefore(borrowed.getBorrowDate())) {
+            throw new IllegalArgumentException("Return date cannot be before borrow date");
+        }
+        
+        // Check if return is overdue
+        boolean isOverdue = returnDate.isAfter(borrowed.getDueDate());
+        
+        if (isOverdue) {
+            long overdueDays = ChronoUnit.DAYS.between(borrowed.getDueDate(), returnDate);
+            BigDecimal fineAmount = DAILY_FINE_RATE.multiply(BigDecimal.valueOf(overdueDays));
+            
+            borrowed.setStatus(BorrowStatus.OVERDUE);
+            
+            Fine fine = new Fine();
+            fine.setBorrowed(borrowed);
+            fine.setAmount(fineAmount);
+            fine.setAssessedDate(returnDate);
+            fine.setStatus(FineStatus.PENDING);
+            fine.setReason("Overdue return: " + overdueDays + " day(s) late at $" + DAILY_FINE_RATE + " per day");
+            
+            fineRepository.save(fine);
+        } else {
+            borrowed.setStatus(BorrowStatus.RETURNED);
+        }
+        
+        // Update borrowed record with return date
         borrowed.setReturnDate(returnDate);
-        borrowed.setStatus(BorrowStatus.RETURNED);
         
         // Update book copy status back to AVAILABLE
         BookCopy bookCopy = borrowed.getBookCopy();
@@ -271,39 +204,5 @@ public class BorrowedImpl implements BorrowedService {
         }
         
         return borrowedRepository.save(borrowed);
-    }
-    
-    @Override
-    public void markOverdue() {
-        LocalDate currentDate = LocalDate.now();
-        List<Borrowed> overdueRecords = borrowedRepository.findOverdueRecords(currentDate);
-        
-        for (Borrowed borrowed : overdueRecords) {
-            borrowed.setStatus(BorrowStatus.OVERDUE);
-        }
-        
-        borrowedRepository.saveAll(overdueRecords);
-    }
-    
-    @Override
-    @Transactional(readOnly = true)
-    public boolean isBookCopyAvailable(Long bookCopyId) {
-        BookCopy bookCopy = bookCopyRepository.findById(bookCopyId)
-                .orElseThrow(() -> new ResourceNotFoundException("BookCopy", "id", bookCopyId));
-        
-        return bookCopy.getStatus() == BookCopyStatus.AVAILABLE;
-    }
-    
-    @Override
-    @Transactional(readOnly = true)
-    public boolean hasUserExceededBorrowLimit(Long userId, int limit) {
-        long activeCount = borrowedRepository.countActiveBorrowsByUserId(userId);
-        return activeCount >= limit;
-    }
-    
-    @Override
-    @Transactional(readOnly = true)
-    public int countActiveBorrowsByUserId(Long userId) {
-        return (int) borrowedRepository.countActiveBorrowsByUserId(userId);
     }
 }

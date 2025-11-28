@@ -13,7 +13,6 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
 
@@ -160,34 +159,6 @@ public class PaymentServiceImpl implements PaymentService {
         return paymentRepository.findByUserId(userId, pageable);
     }
     
-    // Find by date range
-    
-    @Override
-    @Transactional(readOnly = true)
-    public List<Payment> findByPaymentDateBetween(LocalDate startDate, LocalDate endDate) {
-        return paymentRepository.findByPaymentDateBetween(startDate, endDate);
-    }
-    
-    @Override
-    @Transactional(readOnly = true)
-    public Page<Payment> findByPaymentDateBetween(LocalDate startDate, LocalDate endDate, Pageable pageable) {
-        return paymentRepository.findByPaymentDateBetween(startDate, endDate, pageable);
-    }
-    
-    // Find completed payments by method
-    
-    @Override
-    @Transactional(readOnly = true)
-    public List<Payment> findCompletedPaymentsByMethod(PaymentMethod method) {
-        return paymentRepository.findCompletedPaymentsByMethod(method);
-    }
-    
-    @Override
-    @Transactional(readOnly = true)
-    public Page<Payment> findCompletedPaymentsByMethod(PaymentMethod method, Pageable pageable) {
-        return paymentRepository.findCompletedPaymentsByMethod(method, pageable);
-    }
-    
     // Business logic methods
     
     @Override
@@ -205,97 +176,8 @@ public class PaymentServiceImpl implements PaymentService {
             payment.setPaymentDate(LocalDate.now());
         }
         
-        return paymentRepository.save(payment);
-    }
-    
-    @Override
-    public Payment completePayment(Long paymentId, String transactionId) {
-        Payment payment = paymentRepository.findById(paymentId)
-                .orElseThrow(() -> new ResourceNotFoundException("Payment", "id", paymentId));
-        
-        // Validate that payment is not already completed
-        if (payment.getStatus() == PaymentStatus.COMPLETED) {
-            throw new IllegalStateException("Payment is already completed");
-        }
-        
-        // Validate transaction ID uniqueness if different from current
-        if (transactionId != null && !transactionId.equals(payment.getTransactionId())) {
-            if (paymentRepository.existsByTransactionId(transactionId)) {
-                throw new IllegalStateException("Payment with transaction ID " + transactionId + " already exists");
-            }
-        }
-        
-        payment.setStatus(PaymentStatus.COMPLETED);
-        payment.setTransactionId(transactionId);
-        payment.setPaymentDate(LocalDate.now());
         
         return paymentRepository.save(payment);
-    }
-    
-    @Override
-    public Payment failPayment(Long paymentId, String reason) {
-        Payment payment = paymentRepository.findById(paymentId)
-                .orElseThrow(() -> new ResourceNotFoundException("Payment", "id", paymentId));
-        
-        // Validate that payment is not already completed
-        if (payment.getStatus() == PaymentStatus.COMPLETED) {
-            throw new IllegalStateException("Cannot fail a completed payment");
-        }
-        
-        payment.setStatus(PaymentStatus.FAILED);
-        // Store failure reason in transaction ID field if needed, or handle separately
-        
-        return paymentRepository.save(payment);
-    }
-    
-    @Override
-    public Payment refundPayment(Long paymentId) {
-        Payment payment = paymentRepository.findById(paymentId)
-                .orElseThrow(() -> new ResourceNotFoundException("Payment", "id", paymentId));
-        
-        // Validate that payment is currently completed
-        if (payment.getStatus() != PaymentStatus.COMPLETED) {
-            throw new IllegalStateException("Only completed payments can be refunded. Current status: " + payment.getStatus());
-        }
-        
-        // Create a new refund payment record with negative amount
-        Payment refund = new Payment();
-        refund.setAmount(payment.getAmount().negate());
-        refund.setPaymentDate(LocalDate.now());
-        refund.setPaymentMethod(payment.getPaymentMethod());
-        refund.setTransactionId("REFUND-" + payment.getId() + "-" + System.currentTimeMillis());
-        refund.setStatus(PaymentStatus.COMPLETED);
-        refund.setFine(payment.getFine());
-        
-        return paymentRepository.save(refund);
-    }
-    
-    // Calculation methods
-    
-    @Override
-    @Transactional(readOnly = true)
-    public BigDecimal calculateTotalPaidAmountByFineId(Long fineId) {
-        BigDecimal total = paymentRepository.calculateTotalPaidAmountByFineId(fineId);
-        return total != null ? total : BigDecimal.ZERO;
-    }
-    
-    @Override
-    @Transactional(readOnly = true)
-    public BigDecimal calculateTotalPaidAmountByUserId(Long userId) {
-        BigDecimal total = paymentRepository.calculateTotalPaidAmountByUserId(userId);
-        return total != null ? total : BigDecimal.ZERO;
-    }
-    
-    @Override
-    @Transactional(readOnly = true)
-    public BigDecimal calculateTotalRevenueBetween(LocalDate startDate, LocalDate endDate) {
-        BigDecimal total = paymentRepository.calculateTotalRevenueBetween(startDate, endDate);
-        return total != null ? total : BigDecimal.ZERO;
-    }
-    
-    @Override
-    @Transactional(readOnly = true)
-    public boolean existsByTransactionId(String transactionId) {
-        return paymentRepository.existsByTransactionId(transactionId);
     }
 }
+

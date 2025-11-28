@@ -12,7 +12,6 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.LocalDate;
 import java.util.List;
 
 @Service
@@ -136,86 +135,7 @@ public class UserServiceImpl implements UserService {
         return userRepository.findByNameContainingIgnoreCase(name, pageable);
     }
     
-    // Find user by phone number
-    
-    @Override
-    @Transactional(readOnly = true)
-    public User findByPhoneNumber(String phoneNumber) {
-        return userRepository.findByPhoneNumber(phoneNumber)
-                .orElseThrow(() -> new ResourceNotFoundException("User", "phoneNumber", phoneNumber));
-    }
-    
     // Find users by membership date range
-    
-    @Override
-    @Transactional(readOnly = true)
-    public List<User> findByMembershipDateBetween(LocalDate startDate, LocalDate endDate) {
-        return userRepository.findByMembershipDateBetween(startDate, endDate);
-    }
-    
-    @Override
-    @Transactional(readOnly = true)
-    public Page<User> findByMembershipDateBetween(LocalDate startDate, LocalDate endDate, Pageable pageable) {
-        return userRepository.findByMembershipDateBetween(startDate, endDate, pageable);
-    }
-    
-    // Find users with overdue books
-    
-    @Override
-    @Transactional(readOnly = true)
-    public List<User> findUsersWithOverdueBooks() {
-        return userRepository.findUsersWithOverdueBooks(LocalDate.now());
-    }
-    
-    @Override
-    @Transactional(readOnly = true)
-    public Page<User> findUsersWithOverdueBooks(Pageable pageable) {
-        return userRepository.findUsersWithOverdueBooks(LocalDate.now(), pageable);
-    }
-    
-    // Find users with pending fines
-    
-    @Override
-    @Transactional(readOnly = true)
-    public List<User> findUsersWithPendingFines() {
-        return userRepository.findUsersWithPendingFines();
-    }
-    
-    @Override
-    @Transactional(readOnly = true)
-    public Page<User> findUsersWithPendingFines(Pageable pageable) {
-        return userRepository.findUsersWithPendingFines(pageable);
-    }
-    
-    // Business logic methods
-    
-    @Override
-    public User activateUser(Long userId) {
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new ResourceNotFoundException("User", "id", userId));
-        
-        user.setStatus(Status.ACTIVE);
-        return userRepository.save(user);
-    }
-    
-    @Override
-    public User deactivateUser(Long userId) {
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new ResourceNotFoundException("User", "id", userId));
-        
-        user.setStatus(Status.INACTIVE);
-        return userRepository.save(user);
-    }
-    
-    @Override
-    public User suspendUser(Long userId) {
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new ResourceNotFoundException("User", "id", userId));
-        
-        // Set to INACTIVE as there's no SUSPENDED status in the enum
-        user.setStatus(Status.INACTIVE);
-        return userRepository.save(user);
-    }
     
     @Override
     public User changePassword(Long userId, String oldPassword, String newPassword) {
@@ -235,51 +155,5 @@ public class UserServiceImpl implements UserService {
         // Set new password (will be encrypted by @PrePersist/@PreUpdate)
         user.setPassword(newPassword);
         return userRepository.save(user);
-    }
-    
-    // Validation methods
-    
-    @Override
-    @Transactional(readOnly = true)
-    public boolean existsByEmail(String email) {
-        return userRepository.existsByEmail(email);
-    }
-    
-    @Override
-    @Transactional(readOnly = true)
-    public boolean existsByPhoneNumber(String phoneNumber) {
-        return userRepository.existsByPhoneNumber(phoneNumber);
-    }
-    
-    @Override
-    @Transactional(readOnly = true)
-    public long countByStatus(Status status) {
-        return userRepository.countByStatus(status);
-    }
-    
-    @Override
-    @Transactional(readOnly = true)
-    public boolean canUserBorrow(Long userId) {
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new ResourceNotFoundException("User", "id", userId));
-        
-        // Check if user is active
-        if (user.getStatus() != Status.ACTIVE) {
-            return false;
-        }
-        
-        // Check if user has overdue books
-        List<User> usersWithOverdueBooks = userRepository.findUsersWithOverdueBooks(LocalDate.now());
-        if (usersWithOverdueBooks.stream().anyMatch(u -> u.getId().equals(userId))) {
-            return false;
-        }
-        
-        // Check if user has pending fines
-        List<User> usersWithPendingFines = userRepository.findUsersWithPendingFines();
-        if (usersWithPendingFines.stream().anyMatch(u -> u.getId().equals(userId))) {
-            return false;
-        }
-        
-        return true;
     }
 }

@@ -137,63 +137,7 @@ public class LibrarianServiceImpl implements LibrarianService {
         return librarianRepository.findByStatus(status, pageable);
     }
     
-    // Find librarians by name
-    
-    @Override
-    @Transactional(readOnly = true)
-    public List<Librarian> findByNameContainingIgnoreCase(String name) {
-        return librarianRepository.findByNameContainingIgnoreCase(name);
-    }
-    
-    @Override
-    @Transactional(readOnly = true)
-    public Page<Librarian> findByNameContainingIgnoreCase(String name, Pageable pageable) {
-        return librarianRepository.findByNameContainingIgnoreCase(name, pageable);
-    }
-    
-    // Find librarians by status and role
-    
-    @Override
-    @Transactional(readOnly = true)
-    public List<Librarian> findByStatusAndRole(Status status, Role role) {
-        return librarianRepository.findByStatusAndRole(status, role);
-    }
-    
-    @Override
-    @Transactional(readOnly = true)
-    public Page<Librarian> findByStatusAndRole(Status status, Role role, Pageable pageable) {
-        return librarianRepository.findByStatusAndRole(status, role, pageable);
-    }
-    
     // Business logic methods
-    
-    @Override
-    public Librarian activateLibrarian(Long librarianId) {
-        Librarian librarian = librarianRepository.findById(librarianId)
-                .orElseThrow(() -> new ResourceNotFoundException("Librarian", "id", librarianId));
-        
-        librarian.setStatus(Status.ACTIVE);
-        return librarianRepository.save(librarian);
-    }
-    
-    @Override
-    public Librarian deactivateLibrarian(Long librarianId) {
-        Librarian librarian = librarianRepository.findById(librarianId)
-                .orElseThrow(() -> new ResourceNotFoundException("Librarian", "id", librarianId));
-        
-        librarian.setStatus(Status.INACTIVE);
-        return librarianRepository.save(librarian);
-    }
-    
-    @Override
-    public Librarian suspendLibrarian(Long librarianId) {
-        Librarian librarian = librarianRepository.findById(librarianId)
-                .orElseThrow(() -> new ResourceNotFoundException("Librarian", "id", librarianId));
-        
-        // Set to INACTIVE as there's no SUSPENDED status in the enum
-        librarian.setStatus(Status.INACTIVE);
-        return librarianRepository.save(librarian);
-    }
     
     @Override
     public Librarian changePassword(Long librarianId, String oldPassword, String newPassword) {
@@ -213,57 +157,5 @@ public class LibrarianServiceImpl implements LibrarianService {
         // Set new password (will be encrypted by @PrePersist/@PreUpdate)
         librarian.setPassword(newPassword);
         return librarianRepository.save(librarian);
-    }
-    
-    @Override
-    public Librarian promoteToAdmin(Long librarianId) {
-        Librarian librarian = librarianRepository.findById(librarianId)
-                .orElseThrow(() -> new ResourceNotFoundException("Librarian", "id", librarianId));
-        
-        if (librarian.getRole() == Role.ADMIN) {
-            throw new IllegalStateException("Librarian is already an admin");
-        }
-        
-        librarian.setRole(Role.ADMIN);
-        return librarianRepository.save(librarian);
-    }
-    
-    @Override
-    public Librarian demoteToStaff(Long librarianId) {
-        Librarian librarian = librarianRepository.findById(librarianId)
-                .orElseThrow(() -> new ResourceNotFoundException("Librarian", "id", librarianId));
-        
-        if (librarian.getRole() == Role.STAFF) {
-            throw new IllegalStateException("Librarian is already a staff member");
-        }
-        
-        librarian.setRole(Role.STAFF);
-        return librarianRepository.save(librarian);
-    }
-    
-    // Validation methods
-    
-    @Override
-    @Transactional(readOnly = true)
-    public boolean existsByEmail(String email) {
-        return librarianRepository.existsByEmail(email);
-    }
-    
-    @Override
-    @Transactional(readOnly = true)
-    public boolean existsByPhoneNumber(String phoneNumber) {
-        return librarianRepository.existsByPhoneNumber(phoneNumber);
-    }
-    
-    @Override
-    @Transactional(readOnly = true)
-    public long countByRole(Role role) {
-        return librarianRepository.countByRole(role);
-    }
-    
-    @Override
-    @Transactional(readOnly = true)
-    public long countByStatus(Status status) {
-        return librarianRepository.countByStatus(status);
     }
 }

@@ -6,8 +6,6 @@ import com.LibraryManagementSystem.LMS.enums.PaymentStatus;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
-import java.math.BigDecimal;
-import java.time.LocalDate;
 import java.util.List;
 
 public interface PaymentService {
@@ -48,31 +46,6 @@ public interface PaymentService {
     
     Page<Payment> findByUserId(Long userId, Pageable pageable);
     
-    // Find by date range
-    List<Payment> findByPaymentDateBetween(LocalDate startDate, LocalDate endDate);
-    
-    Page<Payment> findByPaymentDateBetween(LocalDate startDate, LocalDate endDate, Pageable pageable);
-    
-    // Find completed payments by method
-    List<Payment> findCompletedPaymentsByMethod(PaymentMethod method);
-    
-    Page<Payment> findCompletedPaymentsByMethod(PaymentMethod method, Pageable pageable);
-    
     // Business logic methods
     Payment processPayment(Long paymentId);
-    
-    Payment completePayment(Long paymentId, String transactionId);
-    
-    Payment failPayment(Long paymentId, String reason);
-    
-    Payment refundPayment(Long paymentId);
-    
-    // Calculation methods
-    BigDecimal calculateTotalPaidAmountByFineId(Long fineId);
-    
-    BigDecimal calculateTotalPaidAmountByUserId(Long userId);
-    
-    BigDecimal calculateTotalRevenueBetween(LocalDate startDate, LocalDate endDate);
-    
-    boolean existsByTransactionId(String transactionId);
 }

@@ -18,16 +18,12 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
-import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.math.BigDecimal;
-import java.time.LocalDate;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.stream.Collectors;
 
 @RestController
@@ -254,122 +250,6 @@ public class FineController {
         }
     }
     
-    // Get Pending Fines by User ID
-    @Operation(
-            summary = "Get pending fines by user",
-            description = "Retrieves all unpaid fines for a specific user with optional pagination"
-    )
-    @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Pending fines retrieved successfully")
-    })
-    @GetMapping("/user/{userId}/pending")
-    public ResponseEntity<?> getPendingFinesByUserId(
-            @Parameter(description = "User ID", required = true, example = "1")
-            @PathVariable Long userId,
-            @Parameter(description = "Page number (0-indexed)", example = "0")
-            @RequestParam(required = false) Integer page,
-            @Parameter(description = "Number of items per page", example = "10")
-            @RequestParam(required = false) Integer size,
-            @Parameter(description = "Field to sort by", example = "assessedDate")
-            @RequestParam(defaultValue = "assessedDate") String sortBy,
-            @Parameter(description = "Sort direction (ASC or DESC)", example = "ASC")
-            @RequestParam(defaultValue = "ASC") String sortDirection) {
-        
-        if (page != null && size != null) {
-            Sort sort = sortDirection.equalsIgnoreCase("DESC")
-                    ? Sort.by(sortBy).descending()
-                    : Sort.by(sortBy).ascending();
-            Pageable pageable = PageRequest.of(page, size, sort);
-            Page<Fine> finePage = fineService.findPendingFinesByUserId(userId, pageable);
-            Page<FineResponseDTO> responsePage = finePage.map(fineMapper::toResponseDTO);
-            return new ResponseEntity<>(responsePage, HttpStatus.OK);
-        } else {
-            List<Fine> fineList = fineService.findPendingFinesByUserId(userId);
-            List<FineResponseDTO> responseDTOs = fineList.stream()
-                    .map(fineMapper::toResponseDTO)
-                    .collect(Collectors.toList());
-            return new ResponseEntity<>(responseDTOs, HttpStatus.OK);
-        }
-    }
-    
-    // Get Fines by Assessed Date Range
-    @Operation(
-            summary = "Get fines by assessed date range",
-            description = "Retrieves fines assessed within a specific date range with optional pagination"
-    )
-    @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Fines retrieved successfully")
-    })
-    @GetMapping("/search/assessed-date")
-    public ResponseEntity<?> getFinesByAssessedDateRange(
-            @Parameter(description = "Start date", required = true, example = "2024-01-01")
-            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
-            @Parameter(description = "End date", required = true, example = "2024-12-31")
-            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate,
-            @Parameter(description = "Page number (0-indexed)", example = "0")
-            @RequestParam(required = false) Integer page,
-            @Parameter(description = "Number of items per page", example = "10")
-            @RequestParam(required = false) Integer size,
-            @Parameter(description = "Field to sort by", example = "assessedDate")
-            @RequestParam(defaultValue = "assessedDate") String sortBy,
-            @Parameter(description = "Sort direction (ASC or DESC)", example = "DESC")
-            @RequestParam(defaultValue = "DESC") String sortDirection) {
-        
-        if (page != null && size != null) {
-            Sort sort = sortDirection.equalsIgnoreCase("DESC")
-                    ? Sort.by(sortBy).descending()
-                    : Sort.by(sortBy).ascending();
-            Pageable pageable = PageRequest.of(page, size, sort);
-            Page<Fine> finePage = fineService.findByAssessedDateBetween(startDate, endDate, pageable);
-            Page<FineResponseDTO> responsePage = finePage.map(fineMapper::toResponseDTO);
-            return new ResponseEntity<>(responsePage, HttpStatus.OK);
-        } else {
-            List<Fine> fineList = fineService.findByAssessedDateBetween(startDate, endDate);
-            List<FineResponseDTO> responseDTOs = fineList.stream()
-                    .map(fineMapper::toResponseDTO)
-                    .collect(Collectors.toList());
-            return new ResponseEntity<>(responseDTOs, HttpStatus.OK);
-        }
-    }
-    
-    // Get Fines Greater Than Amount
-    @Operation(
-            summary = "Get fines greater than amount",
-            description = "Retrieves all fines with an amount greater than the specified value with optional pagination"
-    )
-    @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Fines retrieved successfully")
-    })
-    @GetMapping("/search/amount")
-    public ResponseEntity<?> getFinesByAmountGreaterThan(
-            @Parameter(description = "Minimum fine amount", required = true, example = "10.00")
-            @RequestParam BigDecimal amount,
-            @Parameter(description = "Page number (0-indexed)", example = "0")
-            @RequestParam(required = false) Integer page,
-            @Parameter(description = "Number of items per page", example = "10")
-            @RequestParam(required = false) Integer size,
-            @Parameter(description = "Field to sort by", example = "amount")
-            @RequestParam(defaultValue = "amount") String sortBy,
-            @Parameter(description = "Sort direction (ASC or DESC)", example = "DESC")
-            @RequestParam(defaultValue = "DESC") String sortDirection) {
-        
-        if (page != null && size != null) {
-            Sort sort = sortDirection.equalsIgnoreCase("DESC")
-                    ? Sort.by(sortBy).descending()
-                    : Sort.by(sortBy).ascending();
-            Pageable pageable = PageRequest.of(page, size, sort);
-            Page<Fine> finePage = fineService.findByAmountGreaterThan(amount, pageable);
-            Page<FineResponseDTO> responsePage = finePage.map(fineMapper::toResponseDTO);
-            return new ResponseEntity<>(responsePage, HttpStatus.OK);
-        } else {
-            List<Fine> fineList = fineService.findByAmountGreaterThan(amount);
-            List<FineResponseDTO> responseDTOs = fineList.stream()
-                    .map(fineMapper::toResponseDTO)
-                    .collect(Collectors.toList());
-            return new ResponseEntity<>(responseDTOs, HttpStatus.OK);
-        }
-    }
-    
     // Pay a Fine
     @Operation(
             summary = "Pay a fine",
@@ -387,26 +267,6 @@ public class FineController {
             @PathVariable Long id) {
         Fine paidFine = fineService.payFine(id);
         FineResponseDTO responseDTO = fineMapper.toResponseDTO(paidFine);
-        return new ResponseEntity<>(responseDTO, HttpStatus.OK);
-    }
-    
-    // Waive a Fine
-    @Operation(
-            summary = "Waive a fine",
-            description = "Forgives a fine and updates its status to WAIVED. Used for administrative forgiveness."
-    )
-    @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Fine waived successfully",
-                    content = @Content(schema = @Schema(implementation = FineResponseDTO.class))),
-            @ApiResponse(responseCode = "400", description = "Fine has already been paid or waived"),
-            @ApiResponse(responseCode = "404", description = "Fine not found")
-    })
-    @PostMapping("/{id}/waive")
-    public ResponseEntity<FineResponseDTO> waiveFine(
-            @Parameter(description = "Fine ID", required = true, example = "1")
-            @PathVariable Long id) {
-        Fine waivedFine = fineService.waiveFine(id);
-        FineResponseDTO responseDTO = fineMapper.toResponseDTO(waivedFine);
         return new ResponseEntity<>(responseDTO, HttpStatus.OK);
     }
     
@@ -432,95 +292,5 @@ public class FineController {
         return new ResponseEntity<>(responseDTO, HttpStatus.CREATED);
     }
     
-    // Get Total Pending Fines by User
-    @Operation(
-            summary = "Get total pending fines by user",
-            description = "Calculates the total amount of unpaid fines for a specific user"
-    )
-    @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Total calculated successfully")
-    })
-    @GetMapping("/user/{userId}/total-pending")
-    public ResponseEntity<Map<String, BigDecimal>> getTotalPendingFinesByUserId(
-            @Parameter(description = "User ID", required = true, example = "1")
-            @PathVariable Long userId) {
-        BigDecimal total = fineService.calculateTotalPendingFinesByUserId(userId);
-        Map<String, BigDecimal> response = new HashMap<>();
-        response.put("totalPending", total);
-        return new ResponseEntity<>(response, HttpStatus.OK);
-    }
-    
-    // Get Total Fines by Status
-    @Operation(
-            summary = "Get total fines by status",
-            description = "Calculates the total amount of fines for a specific status (PENDING, PAID, WAIVED)"
-    )
-    @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Total calculated successfully")
-    })
-    @GetMapping("/total/status/{status}")
-    public ResponseEntity<Map<String, BigDecimal>> getTotalFinesByStatus(
-            @Parameter(description = "Fine status", required = true, example = "PENDING")
-            @PathVariable FineStatus status) {
-        BigDecimal total = fineService.calculateTotalFinesByStatus(status);
-        Map<String, BigDecimal> response = new HashMap<>();
-        response.put("total", total);
-        response.put("status", new BigDecimal(status.name().length())); // Just for map consistency
-        return new ResponseEntity<>(response, HttpStatus.OK);
-    }
-    
-    // Count Fines by Status
-    @Operation(
-            summary = "Count fines by status",
-            description = "Returns the total count of fines with a specific status"
-    )
-    @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Count retrieved successfully")
-    })
-    @GetMapping("/count/status/{status}")
-    public ResponseEntity<Map<String, Long>> countFinesByStatus(
-            @Parameter(description = "Fine status", required = true, example = "PENDING")
-            @PathVariable FineStatus status) {
-        long count = fineService.countByStatus(status);
-        Map<String, Long> response = new HashMap<>();
-        response.put("count", count);
-        return new ResponseEntity<>(response, HttpStatus.OK);
-    }
-    
-    // Check if Fine Exists for Borrowed Record
-    @Operation(
-            summary = "Check if fine exists for borrowed record",
-            description = "Validates whether a fine has been assessed for a specific borrow transaction"
-    )
-    @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Check completed successfully")
-    })
-    @GetMapping("/exists/borrowed/{borrowedId}")
-    public ResponseEntity<Map<String, Boolean>> checkFineExistsByBorrowedId(
-            @Parameter(description = "Borrowed record ID", required = true, example = "1")
-            @PathVariable Long borrowedId) {
-        boolean exists = fineService.existsByBorrowedId(borrowedId);
-        Map<String, Boolean> response = new HashMap<>();
-        response.put("exists", exists);
-        return new ResponseEntity<>(response, HttpStatus.OK);
-    }
-    
-    // Check if User Has Pending Fines
-    @Operation(
-            summary = "Check if user has pending fines",
-            description = "Validates whether a user has any unpaid fines. Useful for borrowing eligibility checks."
-    )
-    @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Check completed successfully")
-    })
-    @GetMapping("/user/{userId}/has-pending")
-    public ResponseEntity<Map<String, Boolean>> checkUserHasPendingFines(
-            @Parameter(description = "User ID", required = true, example = "1")
-            @PathVariable Long userId) {
-        boolean hasPending = fineService.hasUserPendingFines(userId);
-        Map<String, Boolean> response = new HashMap<>();
-        response.put("hasPendingFines", hasPending);
-        return new ResponseEntity<>(response, HttpStatus.OK);
-    }
 }
 

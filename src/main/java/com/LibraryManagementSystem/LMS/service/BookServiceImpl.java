@@ -123,12 +123,6 @@ public class BookServiceImpl implements BookService {
     
     @Override
     @Transactional(readOnly = true)
-    public List<Book> findByPublisher(Publisher publisher) {
-        return bookRepository.findByPublisher(publisher);
-    }
-    
-    @Override
-    @Transactional(readOnly = true)
     public List<Book> findByPublisherId(Long publisherId) {
         Publisher publisher = publisherRepository.findById(publisherId)
                 .orElseThrow(() -> new ResourceNotFoundException("Publisher", "id", publisherId));
@@ -145,18 +139,6 @@ public class BookServiceImpl implements BookService {
     
     @Override
     @Transactional(readOnly = true)
-    public List<Book> findByLanguage(String language) {
-        return bookRepository.findByLanguage(language);
-    }
-    
-    @Override
-    @Transactional(readOnly = true)
-    public Page<Book> findByLanguage(String language, Pageable pageable) {
-        return bookRepository.findByLanguage(language, pageable);
-    }
-    
-    @Override
-    @Transactional(readOnly = true)
     public List<Book> findByAuthorName(String authorName) {
         return bookRepository.findByAuthorName(authorName);
     }
@@ -165,41 +147,5 @@ public class BookServiceImpl implements BookService {
     @Transactional(readOnly = true)
     public Page<Book> findByAuthorName(String authorName, Pageable pageable) {
         return bookRepository.findByAuthorName(authorName, pageable);
-    }
-    
-    @Override
-    @Transactional(readOnly = true)
-    public List<Book> findByGenreName(String genreName) {
-        return bookRepository.findByGenreName(genreName);
-    }
-    
-    @Override
-    @Transactional(readOnly = true)
-    public Page<Book> findByGenreName(String genreName, Pageable pageable) {
-        return bookRepository.findByGenreName(genreName, pageable);
-    }
-    
-    @Override
-    @Transactional(readOnly = true)
-    public List<Book> searchBooks(String keyword) {
-        return bookRepository.searchBooks(keyword);
-    }
-    
-    @Override
-    @Transactional(readOnly = true)
-    public Page<Book> searchBooks(String keyword, Pageable pageable) {
-        return bookRepository.searchBooks(keyword, pageable);
-    }
-    
-    @Override
-    @Transactional(readOnly = true)
-    public boolean existsByIsbn(String isbn) {
-        return bookRepository.existsByIsbn(isbn);
-    }
-    
-    @Override
-    @Transactional(readOnly = true)
-    public long countByStatus(BookStatus status) {
-        return bookRepository.countByStatus(status);
     }
 }

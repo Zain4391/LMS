@@ -19,16 +19,11 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
-import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.math.BigDecimal;
-import java.time.LocalDate;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.stream.Collectors;
 
 @RestController
@@ -331,84 +326,6 @@ public class PaymentController {
         }
     }
     
-    // Get Payments by Payment Date Range
-    @Operation(
-            summary = "Get payments by date range",
-            description = "Retrieves all payments made within a specific date range with optional pagination"
-    )
-    @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Payments retrieved successfully")
-    })
-    @GetMapping("/search/payment-date")
-    public ResponseEntity<?> getPaymentsByPaymentDateRange(
-            @Parameter(description = "Start date", required = true, example = "2024-01-01")
-            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
-            @Parameter(description = "End date", required = true, example = "2024-12-31")
-            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate,
-            @Parameter(description = "Page number (0-indexed)", example = "0")
-            @RequestParam(required = false) Integer page,
-            @Parameter(description = "Number of items per page", example = "10")
-            @RequestParam(required = false) Integer size,
-            @Parameter(description = "Field to sort by", example = "paymentDate")
-            @RequestParam(defaultValue = "paymentDate") String sortBy,
-            @Parameter(description = "Sort direction (ASC or DESC)", example = "DESC")
-            @RequestParam(defaultValue = "DESC") String sortDirection) {
-        
-        if (page != null && size != null) {
-            Sort sort = sortDirection.equalsIgnoreCase("DESC")
-                    ? Sort.by(sortBy).descending()
-                    : Sort.by(sortBy).ascending();
-            Pageable pageable = PageRequest.of(page, size, sort);
-            Page<Payment> paymentPage = paymentService.findByPaymentDateBetween(startDate, endDate, pageable);
-            Page<PaymentResponseDTO> responsePage = paymentPage.map(paymentMapper::toResponseDTO);
-            return new ResponseEntity<>(responsePage, HttpStatus.OK);
-        } else {
-            List<Payment> paymentList = paymentService.findByPaymentDateBetween(startDate, endDate);
-            List<PaymentResponseDTO> responseDTOs = paymentList.stream()
-                    .map(paymentMapper::toResponseDTO)
-                    .collect(Collectors.toList());
-            return new ResponseEntity<>(responseDTOs, HttpStatus.OK);
-        }
-    }
-    
-    // Get Completed Payments by Method
-    @Operation(
-            summary = "Get completed payments by payment method",
-            description = "Retrieves all successfully completed payments for a specific payment method with optional pagination"
-    )
-    @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Completed payments retrieved successfully")
-    })
-    @GetMapping("/completed/method/{method}")
-    public ResponseEntity<?> getCompletedPaymentsByMethod(
-            @Parameter(description = "Payment method", required = true, example = "CARD")
-            @PathVariable PaymentMethod method,
-            @Parameter(description = "Page number (0-indexed)", example = "0")
-            @RequestParam(required = false) Integer page,
-            @Parameter(description = "Number of items per page", example = "10")
-            @RequestParam(required = false) Integer size,
-            @Parameter(description = "Field to sort by", example = "paymentDate")
-            @RequestParam(defaultValue = "paymentDate") String sortBy,
-            @Parameter(description = "Sort direction (ASC or DESC)", example = "DESC")
-            @RequestParam(defaultValue = "DESC") String sortDirection) {
-        
-        if (page != null && size != null) {
-            Sort sort = sortDirection.equalsIgnoreCase("DESC")
-                    ? Sort.by(sortBy).descending()
-                    : Sort.by(sortBy).ascending();
-            Pageable pageable = PageRequest.of(page, size, sort);
-            Page<Payment> paymentPage = paymentService.findCompletedPaymentsByMethod(method, pageable);
-            Page<PaymentResponseDTO> responsePage = paymentPage.map(paymentMapper::toResponseDTO);
-            return new ResponseEntity<>(responsePage, HttpStatus.OK);
-        } else {
-            List<Payment> paymentList = paymentService.findCompletedPaymentsByMethod(method);
-            List<PaymentResponseDTO> responseDTOs = paymentList.stream()
-                    .map(paymentMapper::toResponseDTO)
-                    .collect(Collectors.toList());
-            return new ResponseEntity<>(responseDTOs, HttpStatus.OK);
-        }
-    }
-    
     // Process a Payment
     @Operation(
             summary = "Process a payment",
@@ -429,142 +346,5 @@ public class PaymentController {
         return new ResponseEntity<>(responseDTO, HttpStatus.OK);
     }
     
-    // Complete a Payment
-    @Operation(
-            summary = "Complete a payment",
-            description = "Marks a payment as completed with optional transaction ID. Updates fine status accordingly."
-    )
-    @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Payment completed successfully",
-                    content = @Content(schema = @Schema(implementation = PaymentResponseDTO.class))),
-            @ApiResponse(responseCode = "400", description = "Payment cannot be completed in current state"),
-            @ApiResponse(responseCode = "404", description = "Payment not found")
-    })
-    @PostMapping("/{id}/complete")
-    public ResponseEntity<PaymentResponseDTO> completePayment(
-            @Parameter(description = "Payment ID", required = true, example = "1")
-            @PathVariable Long id,
-            @Parameter(description = "Transaction ID from payment gateway", example = "TXN-123456")
-            @RequestParam(required = false) String transactionId) {
-        Payment completedPayment = paymentService.completePayment(id, transactionId);
-        PaymentResponseDTO responseDTO = paymentMapper.toResponseDTO(completedPayment);
-        return new ResponseEntity<>(responseDTO, HttpStatus.OK);
-    }
-    
-    // Fail a Payment
-    @Operation(
-            summary = "Fail a payment",
-            description = "Marks a payment as failed with an optional reason. Updates status to FAILED."
-    )
-    @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Payment marked as failed",
-                    content = @Content(schema = @Schema(implementation = PaymentResponseDTO.class))),
-            @ApiResponse(responseCode = "404", description = "Payment not found")
-    })
-    @PostMapping("/{id}/fail")
-    public ResponseEntity<PaymentResponseDTO> failPayment(
-            @Parameter(description = "Payment ID", required = true, example = "1")
-            @PathVariable Long id,
-            @Parameter(description = "Reason for failure", example = "Insufficient funds")
-            @RequestParam(required = false) String reason) {
-        Payment failedPayment = paymentService.failPayment(id, reason);
-        PaymentResponseDTO responseDTO = paymentMapper.toResponseDTO(failedPayment);
-        return new ResponseEntity<>(responseDTO, HttpStatus.OK);
-    }
-    
-    // Refund a Payment
-    @Operation(
-            summary = "Refund a payment",
-            description = "Creates a refund record for a completed payment and updates payment status"
-    )
-    @ApiResponses(value = {
-            @ApiResponse(responseCode = "201", description = "Refund created successfully",
-                    content = @Content(schema = @Schema(implementation = PaymentResponseDTO.class))),
-            @ApiResponse(responseCode = "400", description = "Payment cannot be refunded - not in completed state"),
-            @ApiResponse(responseCode = "404", description = "Payment not found")
-    })
-    @PostMapping("/{id}/refund")
-    public ResponseEntity<PaymentResponseDTO> refundPayment(
-            @Parameter(description = "Payment ID", required = true, example = "1")
-            @PathVariable Long id) {
-        Payment refundPayment = paymentService.refundPayment(id);
-        PaymentResponseDTO responseDTO = paymentMapper.toResponseDTO(refundPayment);
-        return new ResponseEntity<>(responseDTO, HttpStatus.CREATED);
-    }
-    
-    // Get Total Paid Amount by Fine ID
-    @Operation(
-            summary = "Get total paid amount for a fine",
-            description = "Calculates the total amount paid towards a specific fine across all payment transactions"
-    )
-    @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Total amount calculated successfully")
-    })
-    @GetMapping("/fine/{fineId}/total-paid")
-    public ResponseEntity<Map<String, BigDecimal>> getTotalPaidAmountByFineId(
-            @Parameter(description = "Fine ID", required = true, example = "1")
-            @PathVariable Long fineId) {
-        BigDecimal total = paymentService.calculateTotalPaidAmountByFineId(fineId);
-        Map<String, BigDecimal> response = new HashMap<>();
-        response.put("totalPaid", total);
-        return new ResponseEntity<>(response, HttpStatus.OK);
-    }
-    
-    // Get Total Paid Amount by User ID
-    @Operation(
-            summary = "Get total paid amount by user",
-            description = "Calculates the total amount paid by a specific user across all their payment transactions"
-    )
-    @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Total amount calculated successfully")
-    })
-    @GetMapping("/user/{userId}/total-paid")
-    public ResponseEntity<Map<String, BigDecimal>> getTotalPaidAmountByUserId(
-            @Parameter(description = "User ID", required = true, example = "1")
-            @PathVariable Long userId) {
-        BigDecimal total = paymentService.calculateTotalPaidAmountByUserId(userId);
-        Map<String, BigDecimal> response = new HashMap<>();
-        response.put("totalPaid", total);
-        return new ResponseEntity<>(response, HttpStatus.OK);
-    }
-    
-    // Get Total Revenue by Date Range
-    @Operation(
-            summary = "Get total revenue by date range",
-            description = "Calculates the total revenue from all completed payments within a specific date range"
-    )
-    @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Revenue calculated successfully")
-    })
-    @GetMapping("/revenue")
-    public ResponseEntity<Map<String, BigDecimal>> getTotalRevenue(
-            @Parameter(description = "Start date", required = true, example = "2024-01-01")
-            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
-            @Parameter(description = "End date", required = true, example = "2024-12-31")
-            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate) {
-        BigDecimal total = paymentService.calculateTotalRevenueBetween(startDate, endDate);
-        Map<String, BigDecimal> response = new HashMap<>();
-        response.put("totalRevenue", total);
-        response.put("startDate", new BigDecimal(startDate.toString().length())); // Just for map consistency
-        response.put("endDate", new BigDecimal(endDate.toString().length())); // Just for map consistency
-        return new ResponseEntity<>(response, HttpStatus.OK);
-    }
-    
-    // Check if Transaction ID Exists
-    @Operation(
-            summary = "Check if transaction ID exists",
-            description = "Validates whether a transaction ID already exists in the system to prevent duplicates"
-    )
-    @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Check completed successfully")
-    })
-    @GetMapping("/exists/transaction/{transactionId}")
-    public ResponseEntity<Map<String, Boolean>> checkTransactionIdExists(
-            @Parameter(description = "Transaction ID", required = true, example = "TXN-123456")
-            @PathVariable String transactionId) {
-        boolean exists = paymentService.existsByTransactionId(transactionId);
-        Map<String, Boolean> response = new HashMap<>();
-        response.put("exists", exists);
-        return new ResponseEntity<>(response, HttpStatus.OK);
-    }
+
 }

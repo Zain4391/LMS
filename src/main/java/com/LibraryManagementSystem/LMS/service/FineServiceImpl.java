@@ -2,10 +2,13 @@ package com.LibraryManagementSystem.LMS.service;
 
 import com.LibraryManagementSystem.LMS.entity.Borrowed;
 import com.LibraryManagementSystem.LMS.entity.Fine;
+import com.LibraryManagementSystem.LMS.entity.Payment;
 import com.LibraryManagementSystem.LMS.enums.FineStatus;
+import com.LibraryManagementSystem.LMS.enums.PaymentStatus;
 import com.LibraryManagementSystem.LMS.exception.ResourceNotFoundException;
 import com.LibraryManagementSystem.LMS.repository.BorrowedRepository;
 import com.LibraryManagementSystem.LMS.repository.FineRepository;
+import com.LibraryManagementSystem.LMS.repository.PaymentRepository;
 import com.LibraryManagementSystem.LMS.service.interfaces.FineService;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -23,10 +26,13 @@ public class FineServiceImpl implements FineService {
     
     private final FineRepository fineRepository;
     private final BorrowedRepository borrowedRepository;
+    private final PaymentRepository paymentRepository;
 
-    public FineServiceImpl(FineRepository fineRepository, BorrowedRepository borrowedRepository) {
+    public FineServiceImpl(FineRepository fineRepository, BorrowedRepository borrowedRepository,
+                          PaymentRepository paymentRepository) {
         this.fineRepository = fineRepository;
         this.borrowedRepository = borrowedRepository;
+        this.paymentRepository = paymentRepository;
     }
     
     // Core CRUD methods
@@ -129,49 +135,6 @@ public class FineServiceImpl implements FineService {
         return fineRepository.findByUserId(userId, pageable);
     }
     
-    // Find pending fines by user
-    
-    @Override
-    @Transactional(readOnly = true)
-    public List<Fine> findPendingFinesByUserId(Long userId) {
-        return fineRepository.findPendingFinesByUserId(userId);
-    }
-    
-    @Override
-    @Transactional(readOnly = true)
-    public Page<Fine> findPendingFinesByUserId(Long userId, Pageable pageable) {
-        return fineRepository.findPendingFinesByUserId(userId, pageable);
-    }
-    
-    // Find by date range
-    
-    @Override
-    @Transactional(readOnly = true)
-    public List<Fine> findByAssessedDateBetween(LocalDate startDate, LocalDate endDate) {
-        return fineRepository.findByAssessedDateBetween(startDate, endDate);
-    }
-    
-    @Override
-    @Transactional(readOnly = true)
-    public Page<Fine> findByAssessedDateBetween(LocalDate startDate, LocalDate endDate, Pageable pageable) {
-        return fineRepository.findByAssessedDateBetween(startDate, endDate, pageable);
-    }
-    
-    // Find by amount
-    
-    @Override
-    @Transactional(readOnly = true)
-    public List<Fine> findByAmountGreaterThan(BigDecimal amount) {
-        return fineRepository.findByAmountGreaterThan(amount);
-    }
-    
-    @Override
-    @Transactional(readOnly = true)
-    public Page<Fine> findByAmountGreaterThan(BigDecimal amount, Pageable pageable) {
-        return fineRepository.findByAmountGreaterThan(amount, pageable);
-    }
-    
-    // Business logic methods
     
     @Override
     public Fine payFine(Long fineId) {
@@ -183,21 +146,16 @@ public class FineServiceImpl implements FineService {
             throw new IllegalStateException("Only pending fines can be paid. Current status: " + fine.getStatus());
         }
         
+        // Update fine status to PAID
         fine.setStatus(FineStatus.PAID);
-        return fineRepository.save(fine);
-    }
-    
-    @Override
-    public Fine waiveFine(Long fineId) {
-        Fine fine = fineRepository.findById(fineId)
-                .orElseThrow(() -> new ResourceNotFoundException("Fine", "id", fineId));
         
-        // Validate that fine is currently pending
-        if (fine.getStatus() != FineStatus.PENDING) {
-            throw new IllegalStateException("Only pending fines can be waived. Current status: " + fine.getStatus());
+        // Update all payments to COMPLETED
+        List<Payment> payments = paymentRepository.findByFine(fine);
+        for (Payment payment : payments) {
+            payment.setStatus(PaymentStatus.COMPLETED);
+            paymentRepository.save(payment);
         }
         
-        fine.setStatus(FineStatus.WAIVED);
         return fineRepository.save(fine);
     }
     
@@ -231,44 +189,6 @@ public class FineServiceImpl implements FineService {
         fine.setBorrowed(borrowed);
         
         return fineRepository.save(fine);
-    }
-    
-    // Calculation methods
-    
-    @Override
-    @Transactional(readOnly = true)
-    public BigDecimal calculateTotalPendingFinesByUserId(Long userId) {
-        BigDecimal total = fineRepository.calculateTotalPendingFinesByUserId(userId);
-        return total != null ? total : BigDecimal.ZERO;
-    }
-    
-    @Override
-    @Transactional(readOnly = true)
-    public BigDecimal calculateTotalFinesByStatus(FineStatus status) {
-        BigDecimal total = fineRepository.calculateTotalFinesByStatus(status);
-        return total != null ? total : BigDecimal.ZERO;
-    }
-    
-    @Override
-    @Transactional(readOnly = true)
-    public long countByStatus(FineStatus status) {
-        return fineRepository.countByStatus(status);
-    }
-    
-    @Override
-    @Transactional(readOnly = true)
-    public boolean existsByBorrowedId(Long borrowedId) {
-        Borrowed borrowed = borrowedRepository.findById(borrowedId)
-                .orElseThrow(() -> new ResourceNotFoundException("Borrowed", "id", borrowedId));
-        
-        return fineRepository.existsByBorrowed(borrowed);
-    }
-    
-    @Override
-    @Transactional(readOnly = true)
-    public boolean hasUserPendingFines(Long userId) {
-        List<Fine> pendingFines = fineRepository.findPendingFinesByUserId(userId);
-        return !pendingFines.isEmpty();
     }
 }
 

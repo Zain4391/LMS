@@ -10,8 +10,6 @@ import com.LibraryManagementSystem.LMS.entity.Fine;
 import com.LibraryManagementSystem.LMS.entity.Borrowed;
 import com.LibraryManagementSystem.LMS.enums.FineStatus;
 
-import java.math.BigDecimal;
-import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 
@@ -28,32 +26,6 @@ public interface FineRepository extends JpaRepository<Fine, Long> {
 
     @Query("SELECT f FROM Fine f WHERE f.borrowed.user.id = :userId")
     Page<Fine> findByUserId(@Param("userId") Long userId, Pageable pageable);
-    
-    @Query("SELECT f FROM Fine f WHERE f.borrowed.user.id = :userId AND f.status = com.LibraryManagementSystem.LMS.enums.FineStatus.PENDING")
-    List<Fine> findPendingFinesByUserId(@Param("userId") Long userId);
-    
-    @Query("SELECT f FROM Fine f WHERE f.borrowed.user.id = :userId AND f.status = com.LibraryManagementSystem.LMS.enums.FineStatus.PENDING")
-    Page<Fine> findPendingFinesByUserId(@Param("userId") Long userId, Pageable pageable);
-    
-    @Query("SELECT f FROM Fine f WHERE f.assessedDate BETWEEN :startDate AND :endDate")
-    List<Fine> findByAssessedDateBetween(@Param("startDate") LocalDate startDate, @Param("endDate") LocalDate endDate);
-    
-    @Query("SELECT f FROM Fine f WHERE f.assessedDate BETWEEN :startDate AND :endDate")
-    Page<Fine> findByAssessedDateBetween(@Param("startDate") LocalDate startDate, @Param("endDate") LocalDate endDate, Pageable pageable);
-    
-    @Query("SELECT f FROM Fine f WHERE f.amount > :amount")
-    List<Fine> findByAmountGreaterThan(@Param("amount") BigDecimal amount);
-    
-    @Query("SELECT f FROM Fine f WHERE f.amount > :amount")
-    Page<Fine> findByAmountGreaterThan(@Param("amount") BigDecimal amount, Pageable pageable);
-    
-    @Query("SELECT SUM(f.amount) FROM Fine f WHERE f.borrowed.user.id = :userId AND f.status = com.LibraryManagementSystem.LMS.enums.FineStatus.PENDING")
-    BigDecimal calculateTotalPendingFinesByUserId(@Param("userId") Long userId);
-    
-    @Query("SELECT SUM(f.amount) FROM Fine f WHERE f.status = :status")
-    BigDecimal calculateTotalFinesByStatus(@Param("status") FineStatus status);
-    
-    long countByStatus(FineStatus status);
     
     boolean existsByBorrowed(Borrowed borrowed);
 }

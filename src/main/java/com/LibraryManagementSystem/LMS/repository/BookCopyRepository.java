@@ -3,8 +3,7 @@ package com.LibraryManagementSystem.LMS.repository;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.data.jpa.repository.Query;
-import org.springframework.data.repository.query.Param;
+
 import org.springframework.stereotype.Repository;
 import com.LibraryManagementSystem.LMS.entity.BookCopy;
 import com.LibraryManagementSystem.LMS.entity.Book;
@@ -34,12 +33,6 @@ public interface BookCopyRepository extends JpaRepository<BookCopy, Long> {
     List<BookCopy> findByBookIdAndStatus(Long bookId, BookCopyStatus status);
     Page<BookCopy> findByBookIdAndStatus(Long bookId, BookCopyStatus status, Pageable pageable);
     
-    @Query("SELECT bc FROM BookCopy bc WHERE bc.book.id = :bookId AND bc.status = com.LibraryManagementSystem.LMS.enums.BookCopyStatus.AVAILABLE")
-    List<BookCopy> findAvailableCopiesByBookId(@Param("bookId") Long bookId);
-    
-    @Query("SELECT bc FROM BookCopy bc WHERE bc.book.id = :bookId AND bc.status = com.LibraryManagementSystem.LMS.enums.BookCopyStatus.AVAILABLE")
-    Page<BookCopy> findAvailableCopiesByBookId(@Param("bookId") Long bookId, Pageable pageable);
-    
     List<BookCopy> findByLocation(String location);
     Page<BookCopy> findByLocation(String location, Pageable pageable);
     
@@ -51,12 +44,4 @@ public interface BookCopyRepository extends JpaRepository<BookCopy, Long> {
     
     boolean existsByBarcode(String barcode);
     
-    long countByBook(Book book);
-    
-    long countByBookId(Long bookId);
-    
-    @Query("SELECT COUNT(bc) FROM BookCopy bc WHERE bc.book.id = :bookId AND bc.status = com.LibraryManagementSystem.LMS.enums.BookCopyStatus.AVAILABLE")
-    long countAvailableCopiesByBookId(@Param("bookId") Long bookId);
-    
-    long countByStatus(BookCopyStatus status);
 }
