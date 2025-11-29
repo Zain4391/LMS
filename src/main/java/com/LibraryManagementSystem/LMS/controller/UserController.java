@@ -1,5 +1,6 @@
 package com.LibraryManagementSystem.LMS.controller;
 
+import com.LibraryManagementSystem.LMS.dto.UserPatchDTO;
 import com.LibraryManagementSystem.LMS.dto.UserRequestDTO;
 import com.LibraryManagementSystem.LMS.dto.UserResponseDTO;
 import com.LibraryManagementSystem.LMS.entity.User;
@@ -136,6 +137,30 @@ public class UserController {
             @Valid @RequestBody UserRequestDTO requestDTO) {
         User user = userMapper.toEntity(requestDTO);
         User updatedUser = userService.update(id, user);
+        UserResponseDTO responseDTO = userMapper.toResponseDTO(updatedUser);
+        return new ResponseEntity<>(responseDTO, HttpStatus.OK);
+    }
+
+    // Update user email
+    @Operation(
+        summary = "update email",
+        description = "Updates an existing user's email"
+    )
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Email updated successfully",
+                    content = @Content(schema = @Schema(implementation = UserPatchDTO.class))),
+            @ApiResponse(responseCode = "400", description = "Invalid input data - validation failed"),
+            @ApiResponse(responseCode = "404", description = "User not found with the given ID"),
+            @ApiResponse(responseCode = "409", description = "Email or phone number conflicts with existing user")
+    })
+    @PatchMapping("/{id}")
+    public ResponseEntity<UserResponseDTO> patchUserEmail(
+        @Parameter(description = "User ID", required = true, example = "1")
+        @PathVariable Long id,
+        @Parameter(description = "Update user email", required = true)
+        @Valid @RequestBody UserPatchDTO patchDTO
+    ) {
+        User updatedUser = userService.patchEmail(id, patchDTO);
         UserResponseDTO responseDTO = userMapper.toResponseDTO(updatedUser);
         return new ResponseEntity<>(responseDTO, HttpStatus.OK);
     }

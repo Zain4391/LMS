@@ -1,5 +1,6 @@
 package com.LibraryManagementSystem.LMS.service;
 
+import com.LibraryManagementSystem.LMS.dto.LibrarianPatchDTO;
 import com.LibraryManagementSystem.LMS.entity.Librarian;
 import com.LibraryManagementSystem.LMS.enums.Role;
 import com.LibraryManagementSystem.LMS.enums.Status;
@@ -91,6 +92,18 @@ public class LibrarianServiceImpl implements LibrarianService {
         existingLibrarian.setStatus(librarian.getStatus());
         
         return librarianRepository.save(existingLibrarian);
+    }
+
+    @Override
+    public Librarian patchEmail(Long id, LibrarianPatchDTO patchDTO) {
+        Librarian existingLibrarian = librarianRepository.findById(id)
+            .orElseThrow(() -> new ResourceNotFoundException("User", "id", id));
+        
+            if(patchDTO.getEmail() != null) {
+                existingLibrarian.setEmail(patchDTO.getEmail());
+            }
+
+            return librarianRepository.save(existingLibrarian);
     }
     
     @Override

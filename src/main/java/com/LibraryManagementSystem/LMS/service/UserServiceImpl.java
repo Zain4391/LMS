@@ -1,5 +1,6 @@
 package com.LibraryManagementSystem.LMS.service;
 
+import com.LibraryManagementSystem.LMS.dto.UserPatchDTO;
 import com.LibraryManagementSystem.LMS.entity.User;
 import com.LibraryManagementSystem.LMS.enums.Status;
 import com.LibraryManagementSystem.LMS.exception.ResourceNotFoundException;
@@ -89,6 +90,18 @@ public class UserServiceImpl implements UserService {
         existingUser.setStatus(user.getStatus());
         
         return userRepository.save(existingUser);
+    }
+
+    @Override
+    public User patchEmail(Long id, UserPatchDTO userPatch) {
+        User exitingUser = userRepository.findById(id)
+            .orElseThrow(() -> new ResourceNotFoundException("User", "id", id));
+        
+            if(userPatch.getEmail() != null) {
+                exitingUser.setEmail(userPatch.getEmail());
+            }
+
+            return userRepository.save(exitingUser);
     }
     
     @Override

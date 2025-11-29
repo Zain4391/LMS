@@ -1,5 +1,6 @@
 package com.LibraryManagementSystem.LMS.service.interfaces;
 
+import com.LibraryManagementSystem.LMS.dto.LibrarianPatchDTO;
 import com.LibraryManagementSystem.LMS.entity.Librarian;
 import com.LibraryManagementSystem.LMS.enums.Role;
 import com.LibraryManagementSystem.LMS.enums.Status;
@@ -20,6 +21,8 @@ public interface LibrarianService {
     Page<Librarian> getAllPaginated(Pageable pageable);
 
     Librarian update(Long id, Librarian librarian);
+
+    Librarian patchEmail(Long id, LibrarianPatchDTO patchDTO);
 
     void delete(Long id);
     

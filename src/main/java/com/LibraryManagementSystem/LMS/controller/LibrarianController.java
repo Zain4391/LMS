@@ -1,5 +1,6 @@
 package com.LibraryManagementSystem.LMS.controller;
 
+import com.LibraryManagementSystem.LMS.dto.LibrarianPatchDTO;
 import com.LibraryManagementSystem.LMS.dto.LibrarianRequestDTO;
 import com.LibraryManagementSystem.LMS.dto.LibrarianResponseDTO;
 import com.LibraryManagementSystem.LMS.entity.Librarian;
@@ -138,6 +139,30 @@ public class LibrarianController {
         Librarian librarian = librarianMapper.toEntity(requestDTO);
         Librarian updatedLibrarian = librarianService.update(id, librarian);
         LibrarianResponseDTO responseDTO = librarianMapper.toResponseDTO(updatedLibrarian);
+        return new ResponseEntity<>(responseDTO, HttpStatus.OK);
+    }
+
+    // Update librarian email
+    @Operation(
+            summary = "Update librarian by ID",
+            description = "Updates an existing librarian's information. Email and phone number must be unique if changed."
+    )
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Librarian updated successfully",
+                    content = @Content(schema = @Schema(implementation = LibrarianPatchDTO.class))),
+            @ApiResponse(responseCode = "400", description = "Invalid input - Validation failed"),
+            @ApiResponse(responseCode = "404", description = "Librarian not found with the given ID"),
+            @ApiResponse(responseCode = "409", description = "Conflict - Email or phone number already exists")
+    })
+    @PatchMapping("/{id}")
+    public ResponseEntity<LibrarianResponseDTO> patchLibrarianEmail(
+        @Parameter(description = "Librarian ID", required = true, example = "1")
+        @PathVariable Long id,
+        @Parameter(description = "Updated librarian details", required = true)
+        @Valid @RequestBody LibrarianPatchDTO patchDTO
+    ) {
+        Librarian updatedLib = librarianService.patchEmail(id, patchDTO);
+        LibrarianResponseDTO responseDTO = librarianMapper.toResponseDTO(updatedLib);
         return new ResponseEntity<>(responseDTO, HttpStatus.OK);
     }
     

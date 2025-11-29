@@ -1,5 +1,6 @@
 package com.LibraryManagementSystem.LMS.service.interfaces;
 
+import com.LibraryManagementSystem.LMS.dto.UserPatchDTO;
 import com.LibraryManagementSystem.LMS.entity.User;
 import com.LibraryManagementSystem.LMS.enums.Status;
 import org.springframework.data.domain.Page;
@@ -19,6 +20,8 @@ public interface UserService {
     Page<User> getAllPaginated(Pageable pageable);
 
     User update(Long id, User user);
+
+    User patchEmail(Long id, UserPatchDTO userPatch);
 
     void delete(Long id);
     
