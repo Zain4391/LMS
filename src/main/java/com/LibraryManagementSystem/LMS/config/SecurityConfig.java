@@ -34,32 +34,73 @@ public class SecurityConfig {
         http
             .csrf(csrf -> csrf.disable())
             .authorizeHttpRequests(auth -> auth
-
+                // Public endpoints - No authentication required
                 .requestMatchers("/api/auth/**").permitAll()
                 .requestMatchers("/swagger-ui/**", "/v3/api-docs/**").permitAll()
                 
-                .requestMatchers(HttpMethod.POST, "/api/users").permitAll()
-                
-                // Librarian management - Admin only
-                .requestMatchers("/api/librarians/**").hasRole("ADMIN")
-                
-                // Admin and Staff can read, only Admin can create/update/delete
+                // User Management - Mixed permissions
+                .requestMatchers(HttpMethod.POST, "/api/users").permitAll() // Registration handled by /api/auth/register (this is redundant but safe)
                 .requestMatchers(HttpMethod.GET, "/api/users/**").hasAnyRole("ADMIN", "STAFF")
                 .requestMatchers(HttpMethod.PUT, "/api/users/**").hasAnyRole("ADMIN", "STAFF")
                 .requestMatchers(HttpMethod.PATCH, "/api/users/**").hasAnyRole("ADMIN", "STAFF")
+                .requestMatchers(HttpMethod.POST, "/api/users/*/change-password").hasAnyRole("ADMIN", "STAFF")
                 .requestMatchers(HttpMethod.DELETE, "/api/users/**").hasRole("ADMIN")
                 
-                // All authenticated users can read, only Admin/Staff can modify
+                // Librarian Management - Admin only
+                .requestMatchers("/api/librarians/**").hasRole("ADMIN")
+                
+                // Book Management - Read: All authenticated, Write: Staff/Admin
                 .requestMatchers(HttpMethod.GET, "/api/books/**").authenticated()
-                .requestMatchers("/api/books/**").hasAnyRole("ADMIN", "STAFF")
+                .requestMatchers(HttpMethod.POST, "/api/books/**").hasAnyRole("ADMIN", "STAFF")
+                .requestMatchers(HttpMethod.PUT, "/api/books/**").hasAnyRole("ADMIN", "STAFF")
+                .requestMatchers(HttpMethod.PATCH, "/api/books/**").hasAnyRole("ADMIN", "STAFF")
+                .requestMatchers(HttpMethod.DELETE, "/api/books/**").hasAnyRole("ADMIN", "STAFF")
                 
-                // All authenticated users can read, only Admin/Staff can modify
+                // Author Management - Read: All authenticated, Write: Staff/Admin
                 .requestMatchers(HttpMethod.GET, "/api/authors/**").authenticated()
-                .requestMatchers("/api/authors/**").hasAnyRole("ADMIN", "STAFF")
+                .requestMatchers(HttpMethod.POST, "/api/authors/**").hasAnyRole("ADMIN", "STAFF")
+                .requestMatchers(HttpMethod.PUT, "/api/authors/**").hasAnyRole("ADMIN", "STAFF")
+                .requestMatchers(HttpMethod.DELETE, "/api/authors/**").hasAnyRole("ADMIN", "STAFF")
                 
-                // Users can borrow, Staff can manage
-                .requestMatchers(HttpMethod.POST, "/api/borrowing/**").hasAnyRole("USER", "ADMIN", "STAFF")
-                .requestMatchers("/api/borrowing/**").hasAnyRole("ADMIN", "STAFF")
+                // Genre Management - Read: All authenticated, Write: Staff/Admin
+                .requestMatchers(HttpMethod.GET, "/api/genres/**").authenticated()
+                .requestMatchers(HttpMethod.POST, "/api/genres/**").hasAnyRole("ADMIN", "STAFF")
+                .requestMatchers(HttpMethod.PUT, "/api/genres/**").hasAnyRole("ADMIN", "STAFF")
+                .requestMatchers(HttpMethod.DELETE, "/api/genres/**").hasAnyRole("ADMIN", "STAFF")
+                
+                // Publisher Management - Read: All authenticated, Write: Staff/Admin
+                .requestMatchers(HttpMethod.GET, "/api/publishers/**").authenticated()
+                .requestMatchers(HttpMethod.POST, "/api/publishers/**").hasAnyRole("ADMIN", "STAFF")
+                .requestMatchers(HttpMethod.PUT, "/api/publishers/**").hasAnyRole("ADMIN", "STAFF")
+                .requestMatchers(HttpMethod.DELETE, "/api/publishers/**").hasAnyRole("ADMIN", "STAFF")
+                
+                // Book Copy Management - Read: All authenticated, Write: Staff/Admin
+                .requestMatchers(HttpMethod.GET, "/api/book-copies/**").authenticated()
+                .requestMatchers(HttpMethod.POST, "/api/book-copies/**").hasAnyRole("ADMIN", "STAFF")
+                .requestMatchers(HttpMethod.PUT, "/api/book-copies/**").hasAnyRole("ADMIN", "STAFF")
+                .requestMatchers(HttpMethod.PATCH, "/api/book-copies/**").hasAnyRole("ADMIN", "STAFF")
+                .requestMatchers(HttpMethod.DELETE, "/api/book-copies/**").hasAnyRole("ADMIN", "STAFF")
+                
+                // Borrowing Management - Users can borrow/return, Staff/Admin can manage all
+                .requestMatchers(HttpMethod.GET, "/api/borrowed/**").hasAnyRole("USER", "ADMIN", "STAFF")
+                .requestMatchers(HttpMethod.POST, "/api/borrowed/**").hasAnyRole("USER", "ADMIN", "STAFF")
+                .requestMatchers(HttpMethod.PUT, "/api/borrowed/**").hasAnyRole("ADMIN", "STAFF")
+                .requestMatchers(HttpMethod.PATCH, "/api/borrowed/**").hasAnyRole("ADMIN", "STAFF")
+                .requestMatchers(HttpMethod.DELETE, "/api/borrowed/**").hasAnyRole("ADMIN", "STAFF")
+                
+                // Fine Management - Read: Users can see their fines, Write: Staff/Admin only
+                .requestMatchers(HttpMethod.GET, "/api/fines/**").hasAnyRole("USER", "ADMIN", "STAFF")
+                .requestMatchers(HttpMethod.POST, "/api/fines/**").hasAnyRole("ADMIN", "STAFF")
+                .requestMatchers(HttpMethod.PUT, "/api/fines/**").hasAnyRole("ADMIN", "STAFF")
+                .requestMatchers(HttpMethod.PATCH, "/api/fines/**").hasAnyRole("ADMIN", "STAFF")
+                .requestMatchers(HttpMethod.DELETE, "/api/fines/**").hasAnyRole("ADMIN", "STAFF")
+                
+                // Payment Management - Users can pay their fines, Staff/Admin can manage all
+                .requestMatchers(HttpMethod.GET, "/api/payments/**").hasAnyRole("USER", "ADMIN", "STAFF")
+                .requestMatchers(HttpMethod.POST, "/api/payments/**").hasAnyRole("USER", "ADMIN", "STAFF")
+                .requestMatchers(HttpMethod.PUT, "/api/payments/**").hasAnyRole("ADMIN", "STAFF")
+                .requestMatchers(HttpMethod.PATCH, "/api/payments/**").hasAnyRole("ADMIN", "STAFF")
+                .requestMatchers(HttpMethod.DELETE, "/api/payments/**").hasAnyRole("ADMIN", "STAFF")
                 
                 // All other requests must be authenticated
                 .anyRequest().authenticated()

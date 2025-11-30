@@ -244,9 +244,49 @@ mvn spring-boot:run
 ### 5. Access the Application
 - **API Base URL**: `http://localhost:8080/api`
 - **Swagger UI**: `http://localhost:8080/swagger-ui/index.html`
-- **OpenAPI Docs**: `http://localhost:8080/v3/api-docs`
+- **OpenAPI JSON**: `http://localhost:8080/v3/api-docs`
+- **OpenAPI YAML**: `http://localhost:8080/v3/api-docs.yaml`
 
-## 📚 API Documentation
+## 📚 API Documentation & Testing
+
+### Interactive API Documentation (Swagger UI)
+
+Access the interactive API documentation at: **`http://localhost:8080/swagger-ui/index.html`**
+
+Swagger UI provides:
+- **Complete API endpoint listing** organized by controller
+- **Request/Response schemas** with example values
+- **Try it out** functionality to test endpoints directly from browser
+- **Authentication support** - Click "Authorize" button to add your JWT token
+- **Real-time validation** of requests before sending
+
+#### How to Test with Swagger UI:
+
+1. **Start the application** and navigate to `http://localhost:8080/swagger-ui/index.html`
+
+2. **Register a new user** (No authentication required):
+   - Expand `Authentication` → `POST /api/auth/register`
+   - Click "Try it out"
+   - Fill in the request body with user details
+   - Click "Execute"
+
+3. **Login to get JWT token**:
+   - Expand `Authentication` → `POST /api/auth/user/login`
+   - Click "Try it out"
+   - Enter email and password
+   - Click "Execute"
+   - Copy the `token` from the response
+
+4. **Authorize Swagger with JWT**:
+   - Click the **"Authorize"** button (top right, lock icon)
+   - Enter: `Bearer {your-token-here}` (replace `{your-token-here}` with actual token)
+   - Click "Authorize" then "Close"
+
+5. **Test Protected Endpoints**:
+   - All subsequent requests will include the JWT token automatically
+   - Try endpoints like `GET /api/books` or `GET /api/users`
+
+### API Documentation
 
 ### Authentication Endpoints
 

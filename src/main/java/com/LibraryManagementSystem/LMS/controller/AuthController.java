@@ -190,12 +190,12 @@ public class AuthController {
             description = "Validates a JWT token and returns the associated user information"
     )
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Token is valid"),
+            @ApiResponse(responseCode = "200", description = "Token is valid",
+                    content = @Content(schema = @Schema(implementation = AuthResponseDTO.class))),
             @ApiResponse(responseCode = "401", description = "Token is invalid or expired")
     })
     @GetMapping("/verify")
     public ResponseEntity<AuthResponseDTO> verifyToken(
-            @Parameter(description = "JWT token in Authorization header", required = true)
             @RequestHeader("Authorization") String authHeader) {
         
         if (authHeader == null || !authHeader.startsWith("Bearer ")) {
