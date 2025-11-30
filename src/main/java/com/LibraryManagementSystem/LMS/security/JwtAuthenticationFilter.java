@@ -35,14 +35,23 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter{
         if(authHeader != null && authHeader.startsWith("Bearer ")) {
             String token = authHeader.substring(7);
 
-            if(jwtUtil.validateToken(token)) {
-                String email = jwtUtil.extractEmail(token);
-                String role = jwtUtil.extractRole(token);
+            try {
+                if(jwtUtil.validateToken(token)) {
+                    String email = jwtUtil.extractEmail(token);
+                    String role = jwtUtil.extractRole(token);
 
-                UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(email, null, Collections.singleton(new SimpleGrantedAuthority("ROLE_" + role)));
-                authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
-                SecurityContextHolder.getContext().setAuthentication(authentication);
-            
+                    UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
+                        email, 
+                        null, 
+                        Collections.singleton(new SimpleGrantedAuthority("ROLE_" + role))
+                    );
+                    authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+                    SecurityContextHolder.getContext().setAuthentication(authentication);
+                }
+            } catch (Exception e) {
+                // Let the exception propagate to be handled by GlobalExceptionHandler
+                // Clear any partial authentication
+                SecurityContextHolder.clearContext();
             }
         }
 
