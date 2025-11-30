@@ -41,26 +41,6 @@ public class UserController {
         this.userMapper = userMapper;
     }
     
-    // Create new User
-    @Operation(
-            summary = "Create a new user",
-            description = "Registers a new library member with personal details and membership information. Password is automatically encrypted."
-    )
-    @ApiResponses(value = {
-            @ApiResponse(responseCode = "201", description = "User created successfully",
-                    content = @Content(schema = @Schema(implementation = UserResponseDTO.class))),
-            @ApiResponse(responseCode = "400", description = "Invalid input data - validation failed"),
-            @ApiResponse(responseCode = "409", description = "User with the same email or phone number already exists")
-    })
-    @PostMapping
-    public ResponseEntity<UserResponseDTO> createUser(
-            @Parameter(description = "User details for registration", required = true)
-            @Valid @RequestBody UserRequestDTO requestDTO) {
-        User user = userMapper.toEntity(requestDTO);
-        User createdUser = userService.create(user);
-        UserResponseDTO responseDTO = userMapper.toResponseDTO(createdUser);
-        return new ResponseEntity<>(responseDTO, HttpStatus.CREATED);
-    }
     
     // Get User by ID
     @Operation(
