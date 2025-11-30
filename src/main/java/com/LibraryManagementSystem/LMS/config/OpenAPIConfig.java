@@ -33,6 +33,7 @@ public class OpenAPIConfig {
                                 .url("http://localhost:8080")
                                 .description("Development Server")))
                 .tags(List.of(
+                        new Tag().name("Authentication").description("Authentication endpoints for Users and Librarians"),
                         new Tag().name("Users").description("User management endpoints - Library patron accounts"),
                         new Tag().name("Librarians").description("Librarian management endpoints - Library staff accounts"),
                         new Tag().name("Authors").description("Author management endpoints"),
